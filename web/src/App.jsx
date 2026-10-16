@@ -1,0 +1,121 @@
+import { useEffect, useState } from 'preact/hooks';
+import { get, post, setLoggedOutHandler } from './api.js';
+import { Icon } from './components/Icon.jsx';
+import { Loading } from './components/ui.jsx';
+import { useOnline, useRoute } from './hooks.js';
+import { GoalDetail, GoalList } from './pages/Goals.jsx';
+import { Login } from './pages/Login.jsx';
+import { More } from './pages/More.jsx';
+import { Plan } from './pages/Plan.jsx';
+import { ProjectDetail, ProjectList } from './pages/Projects.jsx';
+import { Today } from './pages/Today.jsx';
+import { useToast } from './toast.js';
+
+const NAV = [
+  { path: '/', section: '', label: 'Today', icon: 'home' },
+  { path: '/plan', section: 'plan', label: 'Plan', icon: 'calendar' },
+  { path: '/goals', section: 'goals', label: 'Goals', icon: 'target' },
+  { path: '/projects', section: 'projects', label: 'Projects', icon: 'steps' },
+  { path: '/more', section: 'more', label: 'More', icon: 'more' },
+];
+
+/** Picks the page for a hash route like '/goals/12'. */
+function page(route, user, onLogout) {
+  const [section, a, b] = route.split('/').filter(Boolean);
+  switch (section) {
+    case undefined:
+      return <Today />;
+    case 'plan':
+      return <Plan day={a} />;
+    case 'goals':
+      if (a === 'm') return <GoalList month={b} />;
+      return a ? <GoalDetail id={a} /> : <GoalList />;
+    case 'projects':
+      return a ? <ProjectDetail id={a} /> : <ProjectList />;
+    case 'more':
+      return <More user={user} onLogout={onLogout} />;
+    default:
+      return <Today />;
+  }
+}
+
+/** Forgets data the offline cache kept for this user. */
+async function clearOfflineData() {
+  if ('caches' in window) await caches.delete('api').catch(() => {});
+}
+
+export function App() {
+  // undefined = still checking, null = logged out.
+  const [user, setUser] = useState(undefined);
+  const [offlineStart, setOfflineStart] = useState(false);
+  const route = useRoute();
+  const online = useOnline();
+  const message = useToast();
+
+  const checkSession = () => {
+    setOfflineStart(false);
+    get('/auth/me')
+      .then((data) => setUser(data.user))
+      .catch((err) => {
+        if (err.status === 0) setOfflineStart(true);
+        else setUser(null);
+      });
+  };
+
+  useEffect(() => {
+    setLoggedOutHandler(() => {
+      clearOfflineData();
+      setUser(null);
+    });
+    checkSession();
+  }, []);
+
+  const logout = async () => {
+    await post('/auth/logout').catch(() => {});
+    await clearOfflineData();
+    setUser(null);
+  };
+
+  if (user === undefined) {
+    return offlineStart ? (
+      <div class="login">
+        <div class="card empty">
+          <p>You're offline and this device has no saved copy yet.</p>
+          <button class="btn" type="button" onClick={checkSession}>
+            Try again
+          </button>
+        </div>
+      </div>
+    ) : (
+      <Loading />
+    );
+  }
+  if (user === null) return <Login onLogin={setUser} />;
+
+  const section = route.split('/').filter(Boolean)[0] ?? '';
+  return (
+    <div class="shell">
+      <nav class="nav" aria-label="Main">
+        <div class="brand">
+          <img src="/icons/icon-192.png" alt="" />
+          Spidey Planner
+        </div>
+        {NAV.map((item) => (
+          <a key={item.path} href={`#${item.path}`} aria-current={section === item.section ? 'page' : undefined}>
+            <Icon name={item.icon} size={22} />
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <main class="main">
+        {!online && <div class="offline">You're offline. Showing the last saved copy; changes need internet.</div>}
+        {page(route, user, logout)}
+      </main>
+      {message && (
+        <div class="toast" role="status">
+          {message}
+        </div>
+      )}
+    </div>
+  );
+}

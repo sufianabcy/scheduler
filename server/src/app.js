@@ -1,4 +1,6 @@
 import express from 'express';
+import { existsSync } from 'node:fs';
+import { sep } from 'node:path';
 import { loadSession, requireJsonForWrites } from './auth/middleware.js';
 import { createSessionStore } from './auth/sessions.js';
 import { HttpError } from './http.js';
@@ -8,6 +10,20 @@ import { dailyRoutes } from './routes/daily.js';
 import { goalRoutes } from './routes/goals.js';
 import { projectRoutes } from './routes/projects.js';
 import { templateRoutes } from './routes/templates.js';
+
+// Only this site's own files may load. Inline style attributes are allowed for progress bar widths.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "manifest-src 'self'",
+  "worker-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
 
 /**
  * `now` is the clock (tests pass a fixed one). `jobs` runs the midnight rollover; index.js also starts its timer.
@@ -25,6 +41,7 @@ export function createApp({ db, config, now = () => new Date(), jobs = createJob
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'same-origin',
+      'Content-Security-Policy': CSP,
     });
     next();
   });
@@ -61,5 +78,18 @@ export function createApp({ db, config, now = () => new Date(), jobs = createJob
   });
 
   app.use('/api', api);
+
+  // The built web app. Built file names change with every build, so /assets can be cached forever;
+  // everything else (index.html, sw.js, the manifest) is checked with the server on every load.
+  if (existsSync(config.webDir)) {
+    app.use(
+      express.static(config.webDir, {
+        setHeaders(res, path) {
+          const immutable = path.includes(`${sep}assets${sep}`);
+          res.set('Cache-Control', immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
+        },
+      }),
+    );
+  }
   return app;
 }

@@ -7,6 +7,7 @@ export const testConfig = {
   host: '127.0.0.1',
   port: 0,
   dbPath: ':memory:',
+  webDir: '/nonexistent',
   cookieSecure: false,
   trustProxy: false,
   timeZone: 'Asia/Kolkata',
@@ -19,9 +20,9 @@ export const randomPassword = () => randomBytes(12).toString('base64url');
  * Starts the app on a random port with an in-memory database. Call close() when done.
  * Pass `now` (a function returning a Date) to control the app's clock.
  */
-export async function startTestServer({ now } = {}) {
+export async function startTestServer({ now, config = {} } = {}) {
   const db = openDb(':memory:');
-  const app = createApp({ db, config: testConfig, ...(now && { now }) });
+  const app = createApp({ db, config: { ...testConfig, ...config }, ...(now && { now }) });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
