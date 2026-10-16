@@ -19,11 +19,11 @@ describe('database', () => {
       .map((r) => r.name);
     for (const name of [
       'users', 'sessions', 'repeating_tasks', 'daily_tasks', 'monthly_goals', 'goal_tasks',
-      'projects', 'project_steps', 'step_items', 'templates', 'template_steps', 'push_subscriptions', 'job_runs',
+      'projects', 'project_steps', 'step_items', 'templates', 'template_steps', 'push_subscriptions', 'job_runs', 'repeat_skips',
     ]) {
       assert.ok(tables.includes(name), `missing table ${name}`);
     }
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 1);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
     assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
     db.close();
   });
@@ -34,7 +34,7 @@ describe('database', () => {
       const path = join(dir, 'data', 'planner.db');
       openDb(path).close();
       const db = openDb(path);
-      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 1);
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
       assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'wal');
       db.close();
     } finally {

@@ -15,10 +15,13 @@ export const testConfig = {
 
 export const randomPassword = () => randomBytes(12).toString('base64url');
 
-/** Starts the app on a random port with an in-memory database. Call close() when done. */
-export async function startTestServer() {
+/**
+ * Starts the app on a random port with an in-memory database. Call close() when done.
+ * Pass `now` (a function returning a Date) to control the app's clock.
+ */
+export async function startTestServer({ now } = {}) {
   const db = openDb(':memory:');
-  const app = createApp({ db, config: testConfig });
+  const app = createApp({ db, config: testConfig, ...(now && { now }) });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });

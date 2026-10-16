@@ -9,8 +9,8 @@ See [SPEC.md](SPEC.md) for what it does and how it's built.
 |------|---------------------------------------------------|---------|
 | 1    | Backend skeleton, login, database tables          | Done    |
 | 2    | Projects and monthly goals                        | Done    |
-| 3    | Daily plan, repeating tasks, Unfinished, clean-up | Next    |
-| 4    | Screens and app install                           | To do   |
+| 3    | Daily plan, repeating tasks, Unfinished, clean-up | Done    |
+| 4    | Screens and app install                           | Next    |
 | 5    | Push notifications                                | To do   |
 | 6    | AWS, HTTPS, backups, auto-deploy                  | To do   |
 | 7    | Spider-Man design pass                            | To do   |
@@ -112,3 +112,40 @@ Tasks follow the same order and lock rules as project steps. Progress = finished
 | DELETE | `/api/goals/:id/tasks/:taskId`          | Unfinished tasks only                               |
 | POST   | `/api/goals/:id/tasks/:taskId/finish`   | Current task only                                   |
 | POST   | `/api/goals/:id/tasks/:taskId/reopen`   | Last finished task only                             |
+
+### Daily plan
+
+Days are `YYYY-MM-DD` in IST. A task's `status` is `open`, `done`, `unfinished` (not done by midnight; shown in the
+Unfinished list) or `missed` (a repeating task that wasn't done).
+
+| Method | Path                     | Body / notes                                                                 |
+|--------|--------------------------|------------------------------------------------------------------------------|
+| GET    | `/api/today`             | Home page: today's tasks, Unfinished list, goal tasks due, goal and project cards |
+| GET    | `/api/days/:day`         | That day's checklist (adds repeating tasks for today and later days)         |
+| POST   | `/api/days/:day/tasks`   | `{ title }`; today or later only                                             |
+| PUT    | `/api/days/:day/order`   | `{ taskIds }`: new order of all of that day's tasks                          |
+| PATCH  | `/api/tasks/:id`         | `{ title?, done? }` or `{ title?, day? }` to move it (not repeating tasks)   |
+| DELETE | `/api/tasks/:id`         | A repeating task deleted from a day stays off that day                       |
+| GET    | `/api/unfinished`        |                                                                              |
+
+Ticking a task from the Unfinished list moves it to today as done.
+
+### Repeating tasks
+
+| Method | Path                 | Body / notes                                                    |
+|--------|----------------------|-----------------------------------------------------------------|
+| GET    | `/api/repeating`     |                                                                 |
+| POST   | `/api/repeating`     | `{ title, weekdays: ['mon', 'tue', …] }`                        |
+| PATCH  | `/api/repeating/:id` | `{ title?, weekdays?, active? }`; changes today and later days only |
+| DELETE | `/api/repeating/:id` | Removes it from today on; past days keep their copies           |
+
+### Midnight rollover
+
+Runs once per IST day for all users, just after midnight (the server checks every minute and before each
+logged-in request, so it catches up if the server was off):
+
+1. Open tasks from earlier days → Unfinished (repeating ones → missed).
+2. Unfinished monthly-goal tasks whose date passed → moved to today.
+3. Finished and missed daily tasks from before this week (Monday) → deleted.
+4. Goals from earlier months → deleted if fully finished, otherwise moved to this month (`carriedFrom` keeps the
+   month they first came from).

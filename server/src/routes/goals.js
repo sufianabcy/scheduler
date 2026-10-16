@@ -14,7 +14,7 @@ function taskInput(value, field) {
   return { title: v.title(value.title, `${field}.title`), dueDay: dueDay(value.dueDay, `${field}.dueDay`) ?? null };
 }
 
-export function goalRoutes({ db }) {
+export function goalRoutes({ db, now }) {
   const goals = createGoals(db);
   const router = Router();
   router.use(requireAuth);
@@ -27,14 +27,14 @@ export function goalRoutes({ db }) {
 
   // ?month=YYYY-MM, default this month (IST).
   router.get('/', (req, res) => {
-    const month = req.query.month === undefined ? monthOf() : v.month(req.query.month);
+    const month = req.query.month === undefined ? monthOf(now()) : v.month(req.query.month);
     res.json({ month, goals: goals.list(req.user.id, month) });
   });
 
   // Body: { title, month?, tasks?: [{ title, dueDay? }] }
   router.post('/', (req, res) => {
     const b = body(req);
-    const month = b.month === undefined ? monthOf() : v.month(b.month);
+    const month = b.month === undefined ? monthOf(now()) : v.month(b.month);
     const tasks = v.list(b.tasks, 'tasks', taskInput);
     res.status(201).json(goals.create(req.user.id, v.title(b.title), month, tasks));
   });

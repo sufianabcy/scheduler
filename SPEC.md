@@ -28,7 +28,9 @@ Status: draft, updated 2026-10-16. Items marked **(assumed)** still need your co
 
 - At midnight, any daily task that isn't ticked moves to an **Unfinished** list. It does not go into the next day.
 - The Unfinished list is shown on the home page. From there you can tick a task, move it to a day, or delete it.
+- Ticking a task in the Unfinished list moves it to today as done, so it shows on the day you finished it.
 - Unfinished tasks stay there until you deal with them.
+- Deleting a repeating task from one day removes it from that day only.
 - A missed repeating task (e.g. daily gym) does **not** go to Unfinished. It just counts as missed for that day.
   **(assumed)**
 
@@ -68,7 +70,8 @@ Status: draft, updated 2026-10-16. Items marked **(assumed)** still need your co
 | Unfinished goal at month end | Moves to next month    | Its finished tasks move with it, so its progress % stays right **(assumed)** |
 | Projects                   | Always                   | Only when you delete them                                   |
 
-The clean-up runs automatically at 00:05 IST.
+The clean-up runs right after midnight IST. The server checks every minute and before every request, and catches up
+if it was off at midnight.
 
 ## 6. Home page
 
@@ -91,7 +94,7 @@ The clean-up runs automatically at 00:05 IST.
 |----------------|------------------------------------------------------------------------------------------|
 | Backend        | Node.js 24 + Express 5, JavaScript. Measured at about 85 MB of RAM (Spring Boot needs ~300 MB) |
 | Database       | SQLite built into Node 24 (`node:sqlite`): a single file, no database service or package |
-| Scheduled jobs | `node-cron` with zone `Asia/Kolkata` (23:00, 06:00, and clean-up at 00:05)                |
+| Scheduled jobs | A one-minute timer inside the server (no package): midnight clean-up now, 23:00 and 06:00 in step 5 |
 | Push           | Web Push with VAPID keys (`web-push` library), so no Firebase account is needed          |
 | Frontend       | Preact + Vite, JavaScript. Same code style as React, but about 3 KB instead of ~45 KB     |
 | Offline        | Today's plan and goals can be viewed offline. Changes need internet                      |

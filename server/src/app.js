@@ -2,12 +2,17 @@ import express from 'express';
 import { loadSession, requireJsonForWrites } from './auth/middleware.js';
 import { createSessionStore } from './auth/sessions.js';
 import { HttpError } from './http.js';
+import { createJobs } from './jobs.js';
 import { authRoutes } from './routes/auth.js';
+import { dailyRoutes } from './routes/daily.js';
 import { goalRoutes } from './routes/goals.js';
 import { projectRoutes } from './routes/projects.js';
 import { templateRoutes } from './routes/templates.js';
 
-export function createApp({ db, config }) {
+/**
+ * `now` is the clock (tests pass a fixed one). `jobs` runs the midnight rollover; index.js also starts its timer.
+ */
+export function createApp({ db, config, now = () => new Date(), jobs = createJobs(db, { now }) }) {
   const app = express();
   const sessions = createSessionStore(db, config);
 
@@ -32,12 +37,19 @@ export function createApp({ db, config }) {
   api.use(requireJsonForWrites);
   api.use(express.json({ limit: '100kb' }));
   api.use(loadSession(sessions, config));
+  // Before any logged-in request, make sure today's midnight rollover has run, so nothing is shown stale
+  // (e.g. just after midnight, before the scheduler's next check). It's one indexed lookup once it has run.
+  api.use((req, res, next) => {
+    if (req.user) jobs.runDue();
+    next();
+  });
 
   api.get('/health', (req, res) => res.json({ ok: true }));
   api.use('/auth', authRoutes({ db, sessions, config }));
   api.use('/projects', projectRoutes({ db }));
   api.use('/templates', templateRoutes({ db }));
-  api.use('/goals', goalRoutes({ db }));
+  api.use('/goals', goalRoutes({ db, now }));
+  api.use(dailyRoutes({ db, now }));
 
   api.use((req, res) => res.status(404).json({ error: 'Not found' }));
   api.use((err, req, res, next) => {
