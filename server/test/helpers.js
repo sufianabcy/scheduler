@@ -52,3 +52,18 @@ export async function startTestServer() {
 
 /** Returns "name=value" from a response's Set-Cookie header. */
 export const cookieFrom = (res) => res.headers.get('set-cookie')?.split(';')[0];
+
+/**
+ * Creates a user, logs in, and returns api(method, path, body) → { status, body } for that user.
+ * Writes without a body send {} so they pass the JSON-only check.
+ */
+export async function loggedIn(t, email) {
+  const password = randomPassword();
+  await t.addUser(email, password);
+  const login = await t.request('/api/auth/login', { method: 'POST', body: { email, password } });
+  const cookie = cookieFrom(login);
+  return async (method, path, body) => {
+    const res = await t.request(path, { method, cookie, body: method === 'GET' ? undefined : (body ?? {}) });
+    return { status: res.status, body: res.status === 204 ? null : await res.json() };
+  };
+}

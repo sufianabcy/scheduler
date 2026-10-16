@@ -8,8 +8,8 @@ See [SPEC.md](SPEC.md) for what it does and how it's built.
 | Step | What                                              | State   |
 |------|---------------------------------------------------|---------|
 | 1    | Backend skeleton, login, database tables          | Done    |
-| 2    | Projects and monthly goals                        | Next    |
-| 3    | Daily plan, repeating tasks, Unfinished, clean-up | To do   |
+| 2    | Projects and monthly goals                        | Done    |
+| 3    | Daily plan, repeating tasks, Unfinished, clean-up | Next    |
 | 4    | Screens and app install                           | To do   |
 | 5    | Push notifications                                | To do   |
 | 6    | AWS, HTTPS, backups, auto-deploy                  | To do   |
@@ -49,13 +49,66 @@ npm test
 
 ## API so far
 
-All requests that change something must be sent as `application/json`.
+All requests that change something must be sent as `application/json`. Everything except `/api/health` and
+`/api/auth/login` needs the login cookie. Changes to a project or goal answer with the whole updated project or goal.
 
-| Method | Path               | Notes                                                       |
-|--------|--------------------|-------------------------------------------------------------|
-| GET    | `/api/health`      | `{ ok: true }`                                              |
+### Login
+
+| Method | Path               | Notes                                                          |
+|--------|--------------------|----------------------------------------------------------------|
+| GET    | `/api/health`      | `{ ok: true }`                                                 |
 | POST   | `/api/auth/login`  | `{ email, password }` → sets the `sp_session` cookie (30 days) |
-| POST   | `/api/auth/logout` | Ends the session                                            |
-| GET    | `/api/auth/me`     | `{ user: { id, email } }`, or 401                           |
+| POST   | `/api/auth/logout` | Ends the session                                               |
+| GET    | `/api/auth/me`     | `{ user: { id, email } }`, or 401                              |
 
 10 failed logins in 15 minutes (per IP address or per email) blocks login for the rest of that window.
+
+### Projects (general goals)
+
+Steps are done in order. Each step's `state` is `done`, `current` (the only one you can finish or tick) or `locked`.
+
+| Method | Path                                            | Body / notes                                              |
+|--------|-------------------------------------------------|-----------------------------------------------------------|
+| GET    | `/api/projects`                                 | Cards: progress, current step                             |
+| POST   | `/api/projects`                                 | `{ title, steps?: [{ title, items? }] }` or `{ title, templateId }` |
+| GET    | `/api/projects/:id`                             | Full project with steps and checklists                    |
+| PATCH  | `/api/projects/:id`                             | `{ title }`                                               |
+| DELETE | `/api/projects/:id`                             |                                                           |
+| POST   | `/api/projects/:id/steps`                       | `{ title, items?, beforeStepId? }` (default: at the end)  |
+| PUT    | `/api/projects/:id/steps/order`                 | `{ stepIds }`: new order of all unfinished steps          |
+| PATCH  | `/api/projects/:id/steps/:stepId`               | `{ title }`                                               |
+| DELETE | `/api/projects/:id/steps/:stepId`               | Unfinished steps only                                     |
+| POST   | `/api/projects/:id/steps/:stepId/finish`        | Current step only; ticks its remaining checklist          |
+| POST   | `/api/projects/:id/steps/:stepId/reopen`        | Last finished step only                                   |
+| POST   | `/api/projects/:id/steps/:stepId/items`         | `{ title }`                                               |
+| PATCH  | `/api/projects/:id/steps/:stepId/items/:itemId` | `{ title?, done? }`; ticking only on the current step     |
+| DELETE | `/api/projects/:id/steps/:stepId/items/:itemId` |                                                           |
+
+Progress: each step is an equal share; the current step adds the ticked part of its checklist (rounded down).
+
+### Templates
+
+| Method | Path                 | Body / notes                                                   |
+|--------|----------------------|----------------------------------------------------------------|
+| GET    | `/api/templates`     |                                                                |
+| POST   | `/api/templates`     | `{ name, steps: [{ title, items? }] }` or `{ name, fromProjectId }` |
+| GET    | `/api/templates/:id` |                                                                |
+| DELETE | `/api/templates/:id` |                                                                |
+
+### Monthly goals
+
+Tasks follow the same order and lock rules as project steps. Progress = finished tasks / all tasks.
+
+| Method | Path                                    | Body / notes                                        |
+|--------|-----------------------------------------|-----------------------------------------------------|
+| GET    | `/api/goals?month=YYYY-MM`              | Default: this month (IST)                           |
+| POST   | `/api/goals`                            | `{ title, month?, tasks?: [{ title, dueDay? }] }`   |
+| GET    | `/api/goals/:id`                        |                                                     |
+| PATCH  | `/api/goals/:id`                        | `{ title }`                                         |
+| DELETE | `/api/goals/:id`                        |                                                     |
+| POST   | `/api/goals/:id/tasks`                  | `{ title, dueDay?, beforeTaskId? }`                 |
+| PUT    | `/api/goals/:id/tasks/order`            | `{ taskIds }`: new order of all unfinished tasks    |
+| PATCH  | `/api/goals/:id/tasks/:taskId`          | `{ title?, dueDay? }`; `dueDay: null` removes the date |
+| DELETE | `/api/goals/:id/tasks/:taskId`          | Unfinished tasks only                               |
+| POST   | `/api/goals/:id/tasks/:taskId/finish`   | Current task only                                   |
+| POST   | `/api/goals/:id/tasks/:taskId/reopen`   | Last finished task only                             |
