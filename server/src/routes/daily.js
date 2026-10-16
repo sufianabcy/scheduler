@@ -39,20 +39,13 @@ export function dailyRoutes({ db, now }) {
   router.get('/today', ready, (req, res) => {
     const userId = req.user.id;
     const month = monthOf(now());
-    const goalCards = goals.list(userId, month);
-    const goalTasksDue = goalCards.flatMap((card) =>
-      goals
-        .detail(userId, card.id)
-        .tasks.filter((t) => t.state !== 'done' && t.dueDay !== null && t.dueDay <= req.today)
-        .map((t) => ({ goalId: card.id, goalTitle: card.title, taskId: t.id, title: t.title, dueDay: t.dueDay, state: t.state })),
-    );
     res.json({
       day: req.today,
       month,
       tasks: daily.dayTasks(userId, req.today, req.today),
       unfinished: daily.unfinished(userId),
-      goalTasksDue,
-      goals: goalCards,
+      goalTasksDue: goals.dueTasks(userId, month, req.today),
+      goals: goals.list(userId, month),
       projects: projects.list(userId),
     });
   });

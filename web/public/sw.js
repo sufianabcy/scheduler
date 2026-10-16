@@ -61,3 +61,39 @@ async function cacheFirst(request) {
   if (response.ok) cache.put(request, response.clone());
   return response;
 }
+
+// ---------- Notifications ----------
+// The server sends { title, body, url, tag }. A newer message with the same tag replaces the older one.
+
+self.addEventListener('push', (event) => {
+  let message = {};
+  try {
+    message = event.data ? event.data.json() : {};
+  } catch {
+    message = { body: event.data?.text() };
+  }
+  event.waitUntil(
+    self.registration.showNotification(message.title ?? 'Spidey Planner', {
+      body: message.body ?? '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/badge-96.png',
+      tag: message.tag,
+      renotify: Boolean(message.tag),
+      data: { url: message.url ?? '/' },
+    }),
+  );
+});
+
+// Tapping a notification opens the app at its page, reusing an open window when there is one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url ?? '/', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((w) => new URL(w.url).origin === self.location.origin);
+      // navigate() fails for a window this worker doesn't control yet; open a new one then.
+      if (open) return open.navigate(url).then((w) => (w ?? open).focus(), () => self.clients.openWindow(url));
+      return self.clients.openWindow(url);
+    }),
+  );
+});

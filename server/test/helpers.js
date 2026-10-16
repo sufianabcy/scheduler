@@ -11,6 +11,7 @@ export const testConfig = {
   cookieSecure: false,
   trustProxy: false,
   timeZone: 'Asia/Kolkata',
+  vapidSubject: 'mailto:test@example.test',
   sessionDays: 30,
 };
 

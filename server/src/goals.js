@@ -59,6 +59,16 @@ export function createGoals(db) {
   return {
     detail,
 
+    /** Unfinished tasks with a date of `day` or earlier, from the user's goals for `month`. */
+    dueTasks(userId, month, day) {
+      return q.ofMonth.all(userId, month).flatMap(({ id }) => {
+        const goal = detail(userId, id);
+        return goal.tasks
+          .filter((t) => t.state !== 'done' && t.dueDay !== null && t.dueDay <= day)
+          .map((t) => ({ goalId: goal.id, goalTitle: goal.title, taskId: t.id, title: t.title, dueDay: t.dueDay, state: t.state }));
+      });
+    },
+
     list(userId, month) {
       return q.ofMonth.all(userId, month).map(({ id }) => {
         const d = detail(userId, id);

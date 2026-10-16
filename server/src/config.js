@@ -12,5 +12,7 @@ export const config = {
   cookieSecure: bool(process.env.COOKIE_SECURE),
   trustProxy: bool(process.env.TRUST_PROXY),
   timeZone: 'Asia/Kolkata',
+  // Contact for the push services (required by the Web Push standard): a mailto: or https: URL.
+  vapidSubject: process.env.VAPID_SUBJECT ?? 'mailto:planner@example.com',
   sessionDays: 30,
 };

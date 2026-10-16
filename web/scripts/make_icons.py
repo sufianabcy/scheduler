@@ -65,6 +65,16 @@ def icon(size, extent, rounded):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def badge(size):
+    """Small one-colour web for the Android status bar (Android uses only the alpha channel)."""
+    big = size * SCALE
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    for line in web_lines(big, 0.92):
+        draw.line(line, fill=(255, 255, 255, 255), width=max(2, round(big * 0.05)), joint="curve")
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     icon(192, 0.78, True).save(OUT / "icon-192.png")
@@ -73,6 +83,7 @@ def main():
     icon(512, 0.62, False).save(OUT / "maskable-512.png")
     icon(180, 0.66, False).convert("RGB").save(OUT / "apple-touch-icon.png")
     icon(32, 0.85, True).save(OUT / "favicon-32.png")
+    badge(96).save(OUT / "badge-96.png")
     print(f"Icons written to {OUT}")
 
 

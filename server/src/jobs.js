@@ -35,7 +35,8 @@ export function rollover(db, today, month) {
   db.prepare("DELETE FROM job_runs WHERE ran_at < datetime('now', '-60 days')").run();
 }
 
-export function createJobs(db, { now = () => new Date() } = {}) {
+/** `notifier` (optional) sends the 23:00 and 06:00 notifications on the same timer. */
+export function createJobs(db, { now = () => new Date(), notifier } = {}) {
   const hasRun = db.prepare('SELECT 1 FROM job_runs WHERE name = ? AND run_key = ?');
   const markRun = db.prepare('INSERT INTO job_runs (name, run_key) VALUES (?, ?)');
 
@@ -61,6 +62,10 @@ export function createJobs(db, { now = () => new Date() } = {}) {
         } catch (err) {
           console.error('Rollover failed', err);
         }
+        notifier
+          ?.runDue()
+          .then((results) => results.forEach((r) => console.log(`Sent ${r.job} notification to user ${r.userId}: ${r.sent} ok, ${r.failed} failed`)))
+          .catch((err) => console.error('Notifications failed', err));
       };
       tick();
       const timer = setInterval(tick, intervalMs);

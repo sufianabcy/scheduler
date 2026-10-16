@@ -1,8 +1,10 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { del, get, patch, post } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
 import { InlineEdit, LoadError, Loading } from '../components/ui.jsx';
 import { attempt, useLoad } from '../hooks.js';
+import { disablePush, enablePush, pushState } from '../push.js';
+import { toast } from '../toast.js';
 import { currentTheme, setTheme } from '../theme.js';
 
 const DAY_NAMES = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
@@ -113,6 +115,74 @@ function Templates() {
   );
 }
 
+const PUSH_TEXT = {
+  unsupported: "This browser can't show notifications. On Android, use Chrome.",
+  'no-worker': 'Notifications only work in the built or installed app, not the development server.',
+  denied: "Notifications are blocked for this site. Allow them in the browser's site settings, then come back here.",
+  off: 'Off on this device.',
+  on: 'On for this device.',
+};
+
+function Notifications() {
+  const [state, setState] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const refresh = () => pushState().then(setState, () => setState('unsupported'));
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const run = async (fn, done) => {
+    setBusy(true);
+    try {
+      await fn();
+      if (done) toast(done);
+    } catch (err) {
+      toast(err.message);
+    }
+    setBusy(false);
+    refresh();
+  };
+  const test = () =>
+    run(async () => {
+      const r = await post('/push/test');
+      toast(r.failed === 0 ? 'Test sent. It should appear in a few seconds.' : `Sent to ${r.sent} device(s), ${r.failed} failed.`);
+    });
+
+  return (
+    <div class="card">
+      <ul class="list">
+        <li class="row" style={{ flexWrap: 'wrap', paddingTop: '12px', paddingBottom: '12px' }}>
+          <div class="row-main">
+            <div>Reminders</div>
+            <div class="row-meta">{state ? PUSH_TEXT[state] : 'Checking…'}</div>
+          </div>
+          {state === 'off' && (
+            <button type="button" class="btn btn-primary btn-small" disabled={busy} onClick={() => run(enablePush, 'Notifications turned on')}>
+              Turn on
+            </button>
+          )}
+          {state === 'on' && (
+            <span class="btn-row">
+              <button type="button" class="btn btn-small" disabled={busy} onClick={test}>
+                Send a test
+              </button>
+              <button type="button" class="btn btn-small btn-ghost" disabled={busy} onClick={() => run(disablePush, 'Notifications turned off')}>
+                Turn off
+              </button>
+            </span>
+          )}
+        </li>
+        <li class="row">
+          <div class="row-main row-meta">
+            11 PM: a reminder to plan tomorrow (skipped if you already have). 6 AM: today's plan and what's unfinished.
+            On a Mac, Chrome must be running, and Chrome must be allowed in System Settings → Notifications.
+          </div>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
 export function More({ user, onLogout }) {
   const [theme, setThemeState] = useState(currentTheme());
   const toggleTheme = () => setThemeState(setTheme(theme === 'dark' ? 'light' : 'dark'));
@@ -121,6 +191,13 @@ export function More({ user, onLogout }) {
     <>
       <h1 class="page-title">More</h1>
       <p class="page-sub">Logged in as {user.email}</p>
+
+      <section class="section">
+        <h2 class="section-title" style={{ marginBottom: '10px' }}>
+          Notifications
+        </h2>
+        <Notifications />
+      </section>
 
       <section class="section">
         <h2 class="section-title" style={{ marginBottom: '10px' }}>

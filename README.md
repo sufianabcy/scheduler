@@ -11,8 +11,8 @@ See [SPEC.md](SPEC.md) for what it does and how it's built.
 | 2    | Projects and monthly goals                        | Done    |
 | 3    | Daily plan, repeating tasks, Unfinished, clean-up | Done    |
 | 4    | Screens and app install                           | Done    |
-| 5    | Push notifications                                | Next    |
-| 6    | AWS, HTTPS, backups, auto-deploy                  | To do   |
+| 5    | Push notifications                                | Done    |
+| 6    | AWS, HTTPS, backups, auto-deploy                  | Next    |
 | 7    | Spider-Man design pass                            | To do   |
 
 ## Run it locally
@@ -184,3 +184,24 @@ logged-in request, so it catches up if the server was off):
 3. Finished and missed daily tasks from before this week (Monday) → deleted.
 4. Goals from earlier months → deleted if fully finished, otherwise moved to this month (`carriedFrom` keeps the
    month they first came from).
+
+### Notifications
+
+| Method | Path                    | Body / notes                                              |
+|--------|-------------------------|-----------------------------------------------------------|
+| GET    | `/api/push`             | `{ publicKey, devices }`                                  |
+| POST   | `/api/push/subscribe`   | The browser's `PushSubscription` JSON                     |
+| POST   | `/api/push/unsubscribe` | `{ endpoint }`                                            |
+| POST   | `/api/push/test`        | Sends a test notification to all of your devices          |
+
+Sent to every device that turned notifications on (More → Notifications), in IST:
+
+- **23:00** "Plan tomorrow". Skipped if you already added tasks for tomorrow (repeating tasks don't count).
+- **06:00** "Today: N tasks", the first three, and how many are in Unfinished.
+
+Each is sent once a day. If the server was down at that moment it still sends later in the window
+(until 23:59 / 08:59), never later. The server makes its push keys (VAPID) on first start and keeps them in the
+database; see `server/.env.example`.
+
+To try it before deploying: build and start the app (see "Run it locally"), open http://127.0.0.1:3000 in your
+own Chrome (the in-app browser blocks notifications), turn notifications on in More, and press "Send a test".

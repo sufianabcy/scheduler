@@ -29,3 +29,13 @@ export const weekdayIndex = (day) => (asDate(day).getUTCDay() + 6) % 7;
 
 /** The Monday of the week that `day` is in. */
 export const weekStart = (day) => addDays(day, -weekdayIndex(day));
+
+const timeFormat = new Intl.DateTimeFormat('en-GB', {
+  timeZone: config.timeZone,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** 'HH:MM' (24-hour) for the given moment, in the app's time zone. */
+export const timeOf = (date = new Date()) => timeFormat.format(date);

@@ -5,10 +5,12 @@ import { loadSession, requireJsonForWrites } from './auth/middleware.js';
 import { createSessionStore } from './auth/sessions.js';
 import { HttpError } from './http.js';
 import { createJobs } from './jobs.js';
+import { createPush, loadVapidKeys } from './push.js';
 import { authRoutes } from './routes/auth.js';
 import { dailyRoutes } from './routes/daily.js';
 import { goalRoutes } from './routes/goals.js';
 import { projectRoutes } from './routes/projects.js';
+import { pushRoutes } from './routes/push.js';
 import { templateRoutes } from './routes/templates.js';
 
 // Only this site's own files may load. Inline style attributes are allowed for progress bar widths.
@@ -27,8 +29,15 @@ const CSP = [
 
 /**
  * `now` is the clock (tests pass a fixed one). `jobs` runs the midnight rollover; index.js also starts its timer.
+ * `push` sends notifications; index.js shares one with the notification jobs.
  */
-export function createApp({ db, config, now = () => new Date(), jobs = createJobs(db, { now }) }) {
+export function createApp({
+  db,
+  config,
+  now = () => new Date(),
+  jobs = createJobs(db, { now }),
+  push = createPush(db, { vapid: loadVapidKeys(db), subject: config.vapidSubject }),
+}) {
   const app = express();
   const sessions = createSessionStore(db, config);
 
@@ -66,6 +75,7 @@ export function createApp({ db, config, now = () => new Date(), jobs = createJob
   api.use('/projects', projectRoutes({ db }));
   api.use('/templates', templateRoutes({ db }));
   api.use('/goals', goalRoutes({ db, now }));
+  api.use('/push', pushRoutes({ push }));
   api.use(dailyRoutes({ db, now }));
 
   api.use((req, res) => res.status(404).json({ error: 'Not found' }));

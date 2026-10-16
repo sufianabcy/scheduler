@@ -9,6 +9,7 @@ import { More } from './pages/More.jsx';
 import { Plan } from './pages/Plan.jsx';
 import { ProjectDetail, ProjectList } from './pages/Projects.jsx';
 import { Today } from './pages/Today.jsx';
+import { disablePush, syncPush } from './push.js';
 import { useToast } from './toast.js';
 
 const NAV = [
@@ -70,7 +71,13 @@ export function App() {
     checkSession();
   }, []);
 
+  useEffect(() => {
+    if (user) syncPush().catch(() => {});
+  }, [user]);
+
   const logout = async () => {
+    // Stop this device's notifications first, while the session still exists to tell the server.
+    await disablePush().catch(() => {});
     await post('/auth/logout').catch(() => {});
     await clearOfflineData();
     setUser(null);
