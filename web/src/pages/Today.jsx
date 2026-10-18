@@ -143,7 +143,7 @@ export function Today() {
           <h2 class="section-title" id="today-title">
             Today
           </h2>
-          <a class="btn btn-ghost btn-small" href={`#/plan/${addDays(data.day, 1)}`}>
+          <a class="section-link" href={`#/plan/${addDays(data.day, 1)}`}>
             Plan tomorrow
           </a>
         </div>
@@ -185,7 +185,7 @@ export function Today() {
           <h2 class="section-title" id="goals-title">
             Monthly goals
           </h2>
-          <a class="btn btn-ghost btn-small" href="#/goals">
+          <a class="section-link" href="#/goals">
             All goals
           </a>
         </div>
@@ -207,7 +207,7 @@ export function Today() {
           <h2 class="section-title" id="projects-title">
             Projects
           </h2>
-          <a class="btn btn-ghost btn-small" href="#/projects">
+          <a class="section-link" href="#/projects">
             All projects
           </a>
         </div>

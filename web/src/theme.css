@@ -73,15 +73,51 @@
   --shadow: 0 4px 16px rgba(17, 20, 42, 0.08);
 }
 
+/* Barlow and Barlow Condensed: one family, so titles and body match. Self-hosted (works offline; the service
+   worker caches the hashed files) and trimmed to Basic Latin plus the punctuation the app uses, ~8 KB each.
+   SIL Open Font License: see assets/fonts/OFL.txt. */
+@font-face {
+  font-family: 'Barlow';
+  src: url('./assets/fonts/barlow-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow';
+  src: url('./assets/fonts/barlow-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/fonts/barlow-condensed-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/fonts/barlow-condensed-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  /* Condensed display face for titles. System fonts only, so it costs 0 bytes:
-     Avenir Next Condensed (Mac), Roboto Condensed / sans-serif-condensed (Android), Arial Narrow (Windows).
-     'Spidey Display' is reserved for an optional bundled font later. */
-  --font-display: 'Spidey Display', 'Avenir Next Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif-condensed,
-    var(--font);
-  --display-case: uppercase;
-  --display-tracking: 0.04em;
+  --font: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', var(--font);
+
+  /* The only sizes the app uses. */
+  --fs-xs: 12px; /* labels, nav captions, badges */
+  --fs-sm: 13.5px; /* secondary text, times, hints */
+  --fs-md: 15px; /* body, task rows, inputs, buttons */
+  --fs-lg: 17px; /* card titles (goal and project names) */
+  --fs-xl: 24px; /* clock, big numbers */
+  --fs-2xl: 34px; /* page titles */
+  /* The only weights: 400 body, 600 emphasis, 700 display. */
+  --lh: 1.4;
+
   --radius: 14px;
   --radius-sm: 9px;
   --nav-height: 64px;

@@ -10,8 +10,9 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: 16px;
-  line-height: 1.45;
+  font-size: var(--fs-md);
+  font-weight: 400;
+  line-height: var(--lh);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -63,8 +64,22 @@ textarea {
   color: inherit;
 }
 
+/* Links read as red emphasis, underlined only on hover or keyboard focus. */
 a {
-  color: var(--blue);
+  color: var(--red-text);
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration: underline;
+}
+
+.empty a,
+.row-meta a,
+.small a {
+  font-weight: 600;
 }
 
 /* ---------- Layout ---------- */
@@ -105,7 +120,7 @@ a {
   gap: 3px;
   color: var(--muted);
   text-decoration: none;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
@@ -143,7 +158,8 @@ a {
     gap: 12px;
     padding: 10px 12px;
     border-radius: var(--radius-sm);
-    font-size: 15px;
+    font-size: var(--fs-md);
+    text-decoration: none;
   }
 
   .nav a[aria-current='page'] {
@@ -156,9 +172,7 @@ a {
     align-items: center;
     gap: 10px;
     padding: 4px 12px 20px;
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 18px;
+    font-size: var(--fs-lg);
   }
 
   .brand img {
@@ -173,11 +187,17 @@ a {
   }
 }
 
-/* ---------- Type ---------- */
+/* ---------- Type ----------
+   Four roles, and nothing else sets a font:
+   Display  condensed 700 uppercase: page titles, clock, brand, big percentages
+   Label    600 uppercase, wide tracking, --fs-xs: section titles, field labels, section links
+   Body     400 (600 on buttons) at --fs-md: tasks, inputs, paragraphs
+   Meta     400 at --fs-sm: times, dates, hints, empty states */
 
 .page-title {
   margin: 4px 0 2px;
-  font-size: 28px;
+  font-size: var(--fs-2xl);
+  line-height: 1.05;
 }
 
 /* Editable titles (goal and project names) are buttons, which don't inherit text styling by default. */
@@ -188,16 +208,52 @@ a {
   color: inherit;
 }
 
-/* Poster-style titles: gold, condensed, uppercase (text-transform only, so screen readers read normal words). */
+/* Nav, card and button links keep their own colour and never underline. */
+.nav a,
+.nav a:hover,
+.goal-card,
+.goal-card:hover,
+.btn:hover {
+  text-decoration: none;
+}
+
+/* Display role. Uppercase via text-transform only, so screen readers read normal words. */
+.page-title,
+.brand,
+.login h1,
+.clock,
+.progress-pct {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .page-title,
 .brand,
 .login h1 {
-  font-family: var(--font-display);
-  text-transform: var(--display-case);
-  letter-spacing: var(--display-tracking);
   color: var(--gold);
-  font-weight: 800;
-  font-stretch: condensed;
+}
+
+/* Label role. */
+.section-title,
+.section-link,
+.field label,
+.field-label {
+  font-family: var(--font);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.section-link {
+  color: var(--red-text);
+  white-space: nowrap;
+}
+
+.section-link::after {
+  content: ' ›';
 }
 
 .title-row {
@@ -208,9 +264,7 @@ a {
 }
 
 .clock {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 750;
+  font-size: var(--fs-xl);
   font-variant-numeric: tabular-nums;
   color: var(--red-text);
   white-space: nowrap;
@@ -219,6 +273,7 @@ a {
 
 .page-sub {
   margin: 0 0 18px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -250,10 +305,6 @@ a {
 
 .section-title {
   margin: 0;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 
@@ -262,7 +313,7 @@ a {
 }
 
 .small {
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* ---------- Cards and lists ---------- */
@@ -312,7 +363,7 @@ a {
 }
 
 .row-meta {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -333,6 +384,7 @@ a {
 
 .empty {
   padding: 18px 14px;
+  font-size: var(--fs-sm);
   color: var(--muted);
   text-align: center;
 }
@@ -349,7 +401,8 @@ a {
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface-2);
-  font-weight: 650;
+  font-size: var(--fs-md);
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   color: var(--text);
@@ -383,7 +436,7 @@ a {
 .btn-small {
   min-height: 32px;
   padding: 0 12px;
-  font-size: 14px;
+  font-size: var(--fs-sm);
 }
 
 .icon-btn {
@@ -529,9 +582,11 @@ a {
 }
 
 .progress-pct {
-  min-width: 42px;
+  min-width: 52px;
   text-align: right;
-  font-weight: 750;
+  font-size: var(--fs-xl);
+  line-height: 1;
+  color: var(--gold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -563,13 +618,14 @@ a {
 
 .goal-card h3 {
   margin: 0 0 8px;
-  font-size: 17px;
+  font-size: var(--fs-lg);
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .goal-card .now {
   margin-top: 10px;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -588,7 +644,7 @@ a {
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -611,8 +667,8 @@ a {
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--fs-xs);
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -654,11 +710,6 @@ a {
   display: grid;
   gap: 6px;
   margin-bottom: 14px;
-}
-
-.field label {
-  font-size: 14px;
-  font-weight: 650;
 }
 
 .add-row {
@@ -721,7 +772,7 @@ a {
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -745,9 +796,11 @@ a {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--blue);
+  color: var(--red-text);
   font: inherit;
+  font-weight: 600;
   text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
@@ -777,7 +830,7 @@ a {
 
 .prio-text {
   color: var(--prio);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .prio-chip {
@@ -787,11 +840,6 @@ a {
 .prio-chip[aria-pressed='true'] {
   border-color: var(--prio);
   background: color-mix(in srgb, var(--prio) 16%, transparent);
-}
-
-.field-label {
-  font-size: 14px;
-  font-weight: 650;
 }
 
 .quick-preview {
@@ -804,7 +852,7 @@ a {
   padding: 8px 12px;
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -841,7 +889,7 @@ a {
 
 .switcher-label {
   text-align: center;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 /* ---------- Steps ---------- */
@@ -864,8 +912,8 @@ a {
   border-radius: 50%;
   background: var(--surface-2);
   color: var(--muted);
-  font-weight: 800;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: var(--fs-sm);
 }
 
 .is-current .step-num {
@@ -916,8 +964,7 @@ a {
 .login h1 {
   margin: 0 0 4px;
   text-align: center;
-  font-family: var(--font-display);
-  font-size: 26px;
+  font-size: var(--fs-2xl);
 }
 
 .login p {
@@ -932,7 +979,7 @@ a {
   border-radius: var(--radius-sm);
   background: var(--red-soft);
   color: var(--danger);
-  font-size: 14px;
+  font-size: var(--fs-sm);
 }
 
 /* ---------- Toast and offline banner ---------- */
@@ -966,7 +1013,7 @@ a {
   border-radius: var(--radius-sm);
   background: var(--blue-soft);
   color: var(--blue);
-  font-size: 14px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 
