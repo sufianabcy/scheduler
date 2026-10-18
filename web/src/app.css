@@ -68,9 +68,35 @@ a:focus-visible {
 }
 
 .main {
-  max-width: 720px;
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 16px 16px calc(var(--nav-height) + 32px + env(safe-area-inset-bottom));
+  padding: 12px 12px calc(var(--nav-height) + 20px + env(safe-area-inset-bottom));
+}
+
+/* Single lists stay at a readable width; the header band and the Today dashboard use the full width. */
+.main .hero ~ :not(.dash):not(.cards) {
+  max-width: 760px;
+}
+
+/* Today: the task list beside goals and projects on wide screens; one column below 1000px. */
+.dash {
+  display: grid;
+  gap: 16px;
+}
+
+.dash-main,
+.dash-side {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+}
+
+@media (min-width: 1000px) {
+  .dash {
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+    align-items: start;
+  }
 }
 
 .nav {
@@ -113,7 +139,7 @@ a:focus-visible {
 @media (min-width: 900px) {
   .shell {
     display: grid;
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 200px 1fr;
   }
 
   .nav {
@@ -133,7 +159,8 @@ a:focus-visible {
     flex-direction: row;
     justify-content: flex-start;
     gap: 12px;
-    padding: 10px 12px;
+    min-height: 40px;
+    padding: 8px 12px;
     border-radius: var(--radius-sm);
     font-size: var(--fs-md);
     text-decoration: none;
@@ -147,20 +174,21 @@ a:focus-visible {
   .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 4px 12px 20px;
+    gap: 8px;
+    padding: 4px 12px 16px;
     font-size: var(--fs-lg);
+    white-space: nowrap;
   }
 
   .brand img {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
   }
 
   .main {
     margin: 0;
-    padding: 28px 40px 48px;
+    padding: 20px 28px 32px;
   }
 }
 
@@ -203,7 +231,7 @@ a:focus-visible {
   overflow: hidden;
   display: flex;
   align-items: flex-end;
-  min-height: 132px;
+  min-height: 112px;
   margin: 0 0 16px;
   padding: 18px 20px;
   border: 1px solid #262c40;
@@ -271,6 +299,7 @@ a:focus-visible {
 
 .hero .page-title {
   margin: 0;
+  font-size: clamp(26px, 7vw, var(--fs-2xl));
   color: #d9b36c; /* gold on night: 10:1 */
 }
 
@@ -372,29 +401,35 @@ a:focus-visible {
 }
 
 .section {
-  margin-top: 26px;
+  margin-top: 16px;
 }
 
+.section:first-child,
+.dash .section {
+  margin-top: 0;
+}
+
+/* A section's heading is the first row of its card, like the poster's "— PETER PARKER —" lines:
+   label, a red hairline, then the action on the right. */
 .section-head {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
 }
 
-/* Thin red hairline, like the poster's dividers. */
 .section-head::after {
   content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  order: 2;
+  flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--red-line), transparent 75%);
-  pointer-events: none;
+  background: linear-gradient(90deg, var(--red-line), transparent);
+}
+
+.section-head > :last-child:not(:first-child) {
+  order: 3;
 }
 
 .section-title {
@@ -438,8 +473,8 @@ a:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 52px;
-  padding: 8px 10px 8px 12px;
+  min-height: 44px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -477,10 +512,29 @@ a:focus-visible {
 }
 
 .empty {
-  padding: 18px 14px;
+  padding: 12px 14px;
   font-size: var(--fs-sm);
   color: var(--muted);
-  text-align: center;
+}
+
+/* Task rows: on wider screens the reminder, repeat and priority sit on the right, one line per task. */
+@media (min-width: 600px) {
+  .task-row .row-main {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .task-row .row-main > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .task-row .row-main > .row-meta {
+    flex: none;
+    margin-left: auto;
+    white-space: nowrap;
+  }
 }
 
 /* ---------- Buttons ---------- */
@@ -560,9 +614,9 @@ a:focus-visible {
 .btn-primary.btn-round {
   flex: none;
   align-self: center; /* rows stretch their children; keep this a circle */
-  width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
   padding: 0;
   border-radius: 50%;
   box-shadow: 0 0 0 3px var(--red-soft), 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -592,12 +646,12 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
   border: 2px solid var(--faint);
   border-radius: 50%;
   background: transparent;
-  color: #fff;
+  color: var(--done-ink);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -627,7 +681,7 @@ a:focus-visible {
 .check.shot::after {
   content: '';
   position: absolute;
-  inset: -16px;
+  inset: -14px;
   border-radius: 50%;
   pointer-events: none;
   background:
@@ -688,26 +742,34 @@ a:focus-visible {
 
 .cards {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
-}
-
-@media (min-width: 600px) {
-  .cards {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 .goal-card {
   display: block;
-  padding: 14px 16px;
+  padding: 12px 14px;
   color: inherit;
   text-decoration: none;
   transition: transform 0.12s, border-color 0.12s;
 }
 
-.goal-card:hover {
+.goal-card.card:hover {
   border-color: var(--red);
   transform: translateY(-1px);
+}
+
+/* Inside a section card, goals and projects are rows separated by lines rather than cards. */
+.goal-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.goal-item:last-child {
+  border-bottom: 0;
+}
+
+.goal-item:hover {
+  background: var(--surface-2);
 }
 
 .goal-card h3 {
@@ -718,7 +780,7 @@ a:focus-visible {
 }
 
 .goal-card .now {
-  margin-top: 10px;
+  margin-top: 6px;
   font-size: var(--fs-sm);
   color: var(--muted);
 }
@@ -808,8 +870,9 @@ a:focus-visible {
 
 .add-row {
   display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 10px;
+  padding: 8px 12px;
   border-top: 1px solid var(--border);
 }
 
@@ -1001,8 +1064,8 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--surface-2);
   color: var(--muted);
@@ -1017,15 +1080,15 @@ a:focus-visible {
 
 .is-done .step-num {
   background: var(--done);
-  color: #fff;
+  color: var(--done-ink);
 }
 
 .step-body {
-  padding: 0 12px 14px 52px;
+  padding: 0 12px 12px 48px;
 }
 
 .sub-list .row {
-  min-height: 44px;
+  min-height: 40px;
   padding-left: 0;
 }
 

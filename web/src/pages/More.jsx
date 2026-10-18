@@ -97,7 +97,7 @@ function Repeating() {
   if (!data) return error ? <LoadError error={error} retry={reload} /> : <Loading />;
 
   return (
-    <div class="card">
+    <div>
       <ul class="list">
         {data.rules.map((rule) => (
           <RuleRow key={rule.id} rule={rule} onChanged={reload} />
@@ -122,7 +122,7 @@ function Templates() {
   };
 
   return (
-    <div class="card">
+    <div>
       <ul class="list">
         {data.templates.map((t) => (
           <li key={t.id} class="row">
@@ -255,7 +255,7 @@ function Notifications() {
     });
 
   return (
-    <div class="card">
+    <div>
       <ul class="list">
         <li class="row" style={{ flexWrap: 'wrap', paddingTop: '12px', paddingBottom: '12px' }}>
           <div class="row-main">
@@ -302,32 +302,32 @@ export function More({ user, onLogout }) {
     <>
       <PageHeader title="More" sub={`Logged in as ${user.email}`} />
 
-      <section class="section">
-        <h2 class="section-title" style={{ marginBottom: '10px' }}>
-          Notifications
-        </h2>
+      <section class="section card">
+        <div class="section-head">
+          <h2 class="section-title">Notifications</h2>
+        </div>
         <Notifications />
       </section>
 
-      <section class="section">
-        <h2 class="section-title" style={{ marginBottom: '10px' }}>
-          Repeating tasks
-        </h2>
+      <section class="section card">
+        <div class="section-head">
+          <h2 class="section-title">Repeating tasks</h2>
+        </div>
         <Repeating />
       </section>
 
-      <section class="section">
-        <h2 class="section-title" style={{ marginBottom: '10px' }}>
-          Project templates
-        </h2>
+      <section class="section card">
+        <div class="section-head">
+          <h2 class="section-title">Project templates</h2>
+        </div>
         <Templates />
       </section>
 
-      <section class="section">
-        <h2 class="section-title" style={{ marginBottom: '10px' }}>
-          This device
-        </h2>
-        <div class="card">
+      <section class="section card">
+        <div class="section-head">
+          <h2 class="section-title">This device</h2>
+        </div>
+        <div>
           <ul class="list">
             <li class="row">
               <div class="row-main">Theme</div>

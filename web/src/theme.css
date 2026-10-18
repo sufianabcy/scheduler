@@ -28,7 +28,8 @@
 
   --blue: #3b6cff;
   --blue-soft: rgba(59, 108, 255, 0.18);
-  --done: #3b6cff;
+  --done: #d9b36c; /* ticks are gold, like the titles */
+  --done-ink: #080a12; /* the tick mark on gold */
   --danger: #ff6b6b;
   --p1: #ff5c5c;
   --p2: #f5a524;
@@ -61,7 +62,8 @@
 
   --blue: #1f4fd6;
   --blue-soft: rgba(31, 79, 214, 0.1);
-  --done: #1f4fd6;
+  --done: #8a6418;
+  --done-ink: #ffffff;
   --danger: #c62828;
   --p1: #c81e24;
   --p2: #c77700;
@@ -118,5 +120,5 @@
 
   --radius: 14px;
   --radius-sm: 9px;
-  --nav-height: 64px;
+  --nav-height: 58px;
 }

@@ -101,7 +101,7 @@ export function TaskRow({ task, onChanged, readOnly, children }) {
   };
 
   return (
-    <li class={`row${done ? ' is-done' : ''}${missed ? ' is-locked' : ''}`} style={{ flexWrap: 'wrap' }}>
+    <li class={`row task-row${done ? ' is-done' : ''}${missed ? ' is-locked' : ''}`} style={{ flexWrap: 'wrap' }}>
       <Check checked={done} disabled={readOnly || missed} label={`Done: ${task.title}`} onChange={tick} priority={task.priority} />
       <div class="row-main">
         {readOnly ? (

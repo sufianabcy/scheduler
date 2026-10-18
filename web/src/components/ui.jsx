@@ -25,7 +25,7 @@ export function Check({ checked, disabled, onChange, label, priority }) {
       disabled={disabled}
       onClick={click}
     >
-      <Icon name="check" size={16} stroke-width={3} />
+      <Icon name="check" size={13} stroke-width={3.4} />
     </button>
   );
 }

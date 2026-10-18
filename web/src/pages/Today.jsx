@@ -14,7 +14,7 @@ function GoalTaskRow({ item, onChanged }) {
     if (await attempt(post(`/goals/${item.goalId}/tasks/${item.taskId}/finish`))) onChanged();
   };
   return (
-    <li class={`row${locked ? ' is-locked' : ''}`}>
+    <li class={`row task-row${locked ? ' is-locked' : ''}`}>
       <Check checked={false} disabled={locked} label={`Done: ${item.title}`} onChange={finish} />
       <div class="row-main">
         <div class="row-title">{item.title}</div>
@@ -39,7 +39,7 @@ function UnfinishedRow({ task, today, onChanged }) {
   };
 
   return (
-    <li class="row" style={{ flexWrap: 'wrap' }}>
+    <li class="row task-row" style={{ flexWrap: 'wrap' }}>
       <Check checked={false} label={`Done: ${task.title}`} onChange={() => change({ done: true })} />
       <div class="row-main">
         <div class="row-title">{task.title}</div>
@@ -73,9 +73,10 @@ function UnfinishedRow({ task, today, onChanged }) {
   );
 }
 
-export function GoalCard({ goal }) {
+/** A goal's name, progress and current task. `plain` drops the card frame, for lists inside a section card. */
+export function GoalCard({ goal, plain }) {
   return (
-    <a class="card goal-card" href={`#/goals/${goal.id}`}>
+    <a class={`goal-card${plain ? ' goal-item' : ' card'}`} href={`#/goals/${goal.id}`}>
       <h3>{goal.title}</h3>
       <Progress value={goal.progress} label={`${goal.title} progress`} />
       <div class="now">
@@ -94,9 +95,9 @@ export function GoalCard({ goal }) {
   );
 }
 
-export function ProjectCard({ project }) {
+export function ProjectCard({ project, plain }) {
   return (
-    <a class="card goal-card" href={`#/projects/${project.id}`}>
+    <a class={`goal-card${plain ? ' goal-item' : ' card'}`} href={`#/projects/${project.id}`}>
       <h3>{project.title}</h3>
       <Progress value={project.progress} label={`${project.title} progress`} />
       <div class="now">
@@ -141,91 +142,86 @@ export function Today() {
 
       <NotificationBanner />
 
-      <section class="section" aria-labelledby="today-title">
-        <div class="section-head">
-          <h2 class="section-title" id="today-title">
-            Today
-          </h2>
-          <a class="section-link" href={`#/plan/${addDays(data.day, 1)}`}>
-            Plan tomorrow
-          </a>
-        </div>
-        <div class="card">
-          <ul class="list">
-            {data.goalTasksDue.map((item) => (
-              <GoalTaskRow key={`g${item.taskId}`} item={item} onChanged={reload} />
-            ))}
-            {data.tasks.map((task) => (
-              <TaskRow key={task.id} task={task} onChanged={reload} />
-            ))}
-            {data.tasks.length === 0 && data.goalTasksDue.length === 0 && (
-              <li class="empty">Nothing planned yet. Add your first task below.</li>
-            )}
-          </ul>
-          <NewTask day={data.day} placeholder={'Add a task, e.g. "call bank 3pm p1"'} onAdded={reload} />
-        </div>
-      </section>
-
-      {data.unfinished.length > 0 && (
-        <section class="section" aria-labelledby="unfinished-title">
-          <div class="section-head">
-            <h2 class="section-title" id="unfinished-title">
-              Unfinished <span class="badge badge-red">{data.unfinished.length}</span>
-            </h2>
-          </div>
-          <div class="card">
+      {/* Two columns on wide screens: today's list on the left, goals and projects beside it. */}
+      <div class="dash">
+        <div class="dash-main">
+          <section class="section card" aria-labelledby="today-title">
+            <div class="section-head">
+              <h2 class="section-title" id="today-title">
+                Today
+              </h2>
+              <a class="section-link" href={`#/plan/${addDays(data.day, 1)}`}>
+                Plan tomorrow
+              </a>
+            </div>
             <ul class="list">
-              {data.unfinished.map((task) => (
-                <UnfinishedRow key={task.id} task={task} today={data.day} onChanged={reload} />
+              {data.goalTasksDue.map((item) => (
+                <GoalTaskRow key={`g${item.taskId}`} item={item} onChanged={reload} />
               ))}
+              {data.tasks.map((task) => (
+                <TaskRow key={task.id} task={task} onChanged={reload} />
+              ))}
+              {data.tasks.length === 0 && data.goalTasksDue.length === 0 && (
+                <li class="empty">Nothing planned yet. Add your first task below.</li>
+              )}
             </ul>
-          </div>
-        </section>
-      )}
+            <NewTask day={data.day} placeholder={'Add a task, e.g. "call bank 3pm p1"'} onAdded={reload} />
+          </section>
 
-      <section class="section" aria-labelledby="goals-title">
-        <div class="section-head">
-          <h2 class="section-title" id="goals-title">
-            Monthly goals
-          </h2>
-          <a class="section-link" href="#/goals">
-            All goals
-          </a>
+          {data.unfinished.length > 0 && (
+            <section class="section card" aria-labelledby="unfinished-title">
+              <div class="section-head">
+                <h2 class="section-title" id="unfinished-title">
+                  Unfinished <span class="badge badge-red">{data.unfinished.length}</span>
+                </h2>
+              </div>
+              <ul class="list">
+                {data.unfinished.map((task) => (
+                  <UnfinishedRow key={task.id} task={task} today={data.day} onChanged={reload} />
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
-        {data.goals.length === 0 ? (
-          <div class="card empty">
-            No goals for this month. <a href="#/goals">Add one</a>
-          </div>
-        ) : (
-          <div class="cards">
-            {data.goals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} />
-            ))}
-          </div>
-        )}
-      </section>
 
-      <section class="section" aria-labelledby="projects-title">
-        <div class="section-head">
-          <h2 class="section-title" id="projects-title">
-            Projects
-          </h2>
-          <a class="section-link" href="#/projects">
-            All projects
-          </a>
+        <div class="dash-side">
+          <section class="section card" aria-labelledby="goals-title">
+            <div class="section-head">
+              <h2 class="section-title" id="goals-title">
+                Monthly goals
+              </h2>
+              <a class="section-link" href="#/goals">
+                All goals
+              </a>
+            </div>
+            {data.goals.length === 0 ? (
+              <div class="empty">
+                No goals for this month. <a href="#/goals">Add one</a>
+              </div>
+            ) : (
+              data.goals.map((goal) => <GoalCard key={goal.id} goal={goal} plain />)
+            )}
+          </section>
+
+          <section class="section card" aria-labelledby="projects-title">
+            <div class="section-head">
+              <h2 class="section-title" id="projects-title">
+                Projects
+              </h2>
+              <a class="section-link" href="#/projects">
+                All projects
+              </a>
+            </div>
+            {activeProjects.length === 0 ? (
+              <div class="empty">
+                No active projects. <a href="#/projects">Start one</a>
+              </div>
+            ) : (
+              activeProjects.map((project) => <ProjectCard key={project.id} project={project} plain />)
+            )}
+          </section>
         </div>
-        {activeProjects.length === 0 ? (
-          <div class="card empty">
-            No active projects. <a href="#/projects">Start one</a>
-          </div>
-        ) : (
-          <div class="cards">
-            {activeProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        )}
-      </section>
+      </div>
     </>
   );
 }
