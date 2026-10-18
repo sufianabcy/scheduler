@@ -9,16 +9,9 @@ import { Icon } from './Icon.jsx';
 import { PriorityPicker, ReminderPicker, RepeatPicker } from './TaskOptions.jsx';
 import { Check } from './ui.jsx';
 
-/** The small line under a task: how it repeats and when it reminds. */
+/** The small line with a task's repeat and reminder (under it on phones, on its right on wider screens). */
 function TaskMeta({ task, extra }) {
   const parts = [];
-  if (task.priority) {
-    parts.push(
-      <span key="p" class={`prio-text prio-${task.priority}`}>
-        <Icon name="flag" size={13} /> P{task.priority}
-      </span>,
-    );
-  }
   if (task.repeat) {
     parts.push(
       <span key="r">
@@ -36,6 +29,11 @@ function TaskMeta({ task, extra }) {
   if (extra) parts.push(<span key="x">{extra}</span>);
   if (parts.length === 0) return null;
   return <div class="row-meta meta-line">{parts}</div>;
+}
+
+function PriorityDot({ priority }) {
+  if (!priority) return null;
+  return <span class={`prio-dot prio-${priority}`} role="img" aria-label={`Priority ${priority}`} title={`P${priority}`} />;
 }
 
 /** Edits a task's title, repeat and reminder. Repeat and reminder changes apply to the whole series. */
@@ -105,9 +103,13 @@ export function TaskRow({ task, onChanged, readOnly, children }) {
       <Check checked={done} disabled={readOnly || missed} label={`Done: ${task.title}`} onChange={tick} priority={task.priority} />
       <div class="row-main">
         {readOnly ? (
-          <span class="row-title">{task.title}</span>
+          <span class="row-title">
+            <PriorityDot priority={task.priority} />
+            {task.title}
+          </span>
         ) : (
           <button type="button" class="title-button row-title" aria-expanded={editing} aria-label={`Edit ${task.title}`} onClick={() => setEditing(!editing)}>
+            <PriorityDot priority={task.priority} />
             {task.title}
           </button>
         )}

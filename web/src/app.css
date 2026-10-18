@@ -129,7 +129,8 @@ a:focus-visible {
 
 .nav a[aria-current='page'] {
   color: var(--red-text);
-  box-shadow: inset 0 2px 0 var(--red); /* red top edge on the phone bar */
+  background: var(--red-soft);
+  box-shadow: inset 0 3px 0 var(--red); /* red top bar on the phone */
 }
 
 .brand {
@@ -168,7 +169,7 @@ a:focus-visible {
 
   .nav a[aria-current='page'] {
     background: var(--red-soft);
-    box-shadow: inset 3px 0 0 var(--red); /* red left edge in the desktop sidebar */
+    box-shadow: inset 3px 0 0 var(--red); /* red left bar in the desktop sidebar */
   }
 
   .brand {
@@ -452,6 +453,14 @@ a:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  transition: border-color 0.15s;
+}
+
+/* On a computer, the card under the pointer gets a faint red edge. */
+@media (hover: hover) {
+  .card:hover {
+    border-color: color-mix(in srgb, var(--red) 35%, var(--border));
+  }
 }
 
 /* Faint top light on cards in the dark theme; a static gradient painted once. */
@@ -754,11 +763,6 @@ a:focus-visible {
   transition: transform 0.12s, border-color 0.12s;
 }
 
-.goal-card.card:hover {
-  border-color: var(--red);
-  transform: translateY(-1px);
-}
-
 /* Inside a section card, goals and projects are rows separated by lines rather than cards. */
 .goal-item {
   border-bottom: 1px solid var(--border);
@@ -983,6 +987,18 @@ a:focus-visible {
 .check[class*='prio-'][aria-checked='true'] {
   background: var(--done);
   border-color: var(--done);
+}
+
+/* Priority on a task: a small coloured dot before its name (the tick circle is tinted too). */
+.prio-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--prio);
+  vertical-align: 0.1em;
 }
 
 .prio-text {
