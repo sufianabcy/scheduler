@@ -7,8 +7,11 @@ import './app.css';
 applyTheme();
 render(<App />, document.getElementById('app'));
 
-// The service worker makes the app installable and lets it open offline. Only in the built app:
-// in development it would cache files while you're editing them.
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+// The service worker shows notifications, makes the app installable and lets it open offline. It is registered
+// straight away (not on 'load') so notifications can be switched on at once. In development it's registered
+// with ?dev, which turns its file caching off so edits show up immediately.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register(import.meta.env.PROD ? '/sw.js' : '/sw.js?dev').catch((err) => {
+    console.error('Service worker registration failed', err);
+  });
 }

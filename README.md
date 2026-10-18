@@ -65,6 +65,12 @@ npm run user -- remove <email> --yes   # deletes the user and ALL of their data
 npm --prefix server test
 ```
 
+```bash
+npm --prefix web test
+```
+
+The web tests cover quick add (`web/src/quickadd.js`).
+
 ## Web app
 
 `web/` is Preact + Vite in plain JavaScript (about 15 KB of script after compression). Screens:
@@ -157,9 +163,9 @@ Unfinished list) or `missed` (a repeating task that wasn't done).
 |--------|--------------------------|------------------------------------------------------------------------------|
 | GET    | `/api/today`             | Home page: today's tasks, Unfinished list, goal tasks due, goal and project cards |
 | GET    | `/api/days/:day`         | That day's checklist (adds repeating tasks for today and later days)         |
-| POST   | `/api/days/:day/tasks`   | `{ title }`; today or later only                                             |
+| POST   | `/api/days/:day/tasks`   | `{ title, repeat?, remindAt?, priority? }`; today or later. Answers `{ tasks, firstDay }` |
 | PUT    | `/api/days/:day/order`   | `{ taskIds }`: new order of all of that day's tasks                          |
-| PATCH  | `/api/tasks/:id`         | `{ title?, done? }` or `{ title?, day? }` to move it (not repeating tasks)   |
+| PATCH  | `/api/tasks/:id`         | `{ title?, done?, day?, repeat?, remindAt?, priority? }`; `done` and `day` not together |
 | DELETE | `/api/tasks/:id`         | A repeating task deleted from a day stays off that day                       |
 | GET    | `/api/unfinished`        |                                                                              |
 
@@ -170,9 +176,22 @@ Ticking a task from the Unfinished list moves it to today as done.
 | Method | Path                 | Body / notes                                                    |
 |--------|----------------------|-----------------------------------------------------------------|
 | GET    | `/api/repeating`     |                                                                 |
-| POST   | `/api/repeating`     | `{ title, weekdays: ['mon', 'tue', …] }`                        |
-| PATCH  | `/api/repeating/:id` | `{ title?, weekdays?, active? }`; changes today and later days only |
+| POST   | `/api/repeating`     | `{ title, repeat, startDay?, remindAt? }` or `{ title, weekdays }` |
+| PATCH  | `/api/repeating/:id` | `{ title?, repeat?, weekdays?, active?, remindAt? }`; today and later only |
 | DELETE | `/api/repeating/:id` | Removes it from today on; past days keep their copies           |
+
+`repeat` works like Google Tasks: `{ freq: 'daily' | 'weekly' | 'monthly', every: 1–99, weekdays: ['mon', …],
+until: 'YYYY-MM-DD' | null }`. Weekly with no weekdays repeats on the start day's weekday; monthly on the 31st falls on
+the last day of shorter months. `repeat: null` on a repeating task stops it (that day's copy stays as a one-off).
+Changing the title, repeat or reminder of a repeating task changes it and its upcoming copies; past days stay as they
+were. `remindAt` is `'HH:MM'` (IST) or `null`. `priority` is 1 (highest), 2, 3 or `null`; a day lists P1 first,
+then P2, P3, then the rest, each in the order you set.
+
+**Quick add** (in the app, before anything is sent): one typed line can carry the day, reminder, repeat and priority,
+e.g. `gym tomorrow 7am every mon wed p1`. It understands today / tomorrow / tonight / day after tomorrow / in 3 days /
+next week / a weekday / `25 oct` / `oct 25` / `25/10` (day first); `7am`, `7:30pm`, `19:00`, `at 5` (1–6 means PM),
+`noon`; `daily`, `every weekday`, `every mon wed`, `every 2 weeks`, `every other day`, `monthly`; and `p1`–`p3`.
+The app shows what it understood before adding, with a "Keep text as typed" link.
 
 ### Midnight rollover
 
@@ -194,14 +213,24 @@ logged-in request, so it catches up if the server was off):
 | POST   | `/api/push/unsubscribe` | `{ endpoint }`                                            |
 | POST   | `/api/push/test`        | Sends a test notification to all of your devices          |
 
-Sent to every device that turned notifications on (More → Notifications), in IST:
+| GET    | `/api/settings/notifications` | `{ eveningReminder: { on, time }, morningSummary: { on, time } }` |
+| PATCH  | `/api/settings/notifications` | Any part of the above. Evening 12:00–23:59, morning 00:00–12:00   |
 
-- **23:00** "Plan tomorrow". Skipped if you already added tasks for tomorrow (repeating tasks don't count).
-- **06:00** "Today: N tasks", the first three, and how many are in Unfinished.
+Sent to every device that turned notifications on (More → Notifications), in IST, at times each user picks:
 
-Each is sent once a day. If the server was down at that moment it still sends later in the window
-(until 23:59 / 08:59), never later. The server makes its push keys (VAPID) on first start and keeps them in the
-database; see `server/.env.example`.
+- **Plan-tomorrow reminder** (default 23:00). Skipped if you already added tasks for tomorrow.
+- **Today's plan** (default 06:00): "Today: N tasks", the first three, and how many are in Unfinished.
+- **Task reminders**: at the time set on a task, while it's still open. Repeating tasks remind on every copy.
 
-To try it before deploying: build and start the app (see "Run it locally"), open http://127.0.0.1:3000 in your
-own Chrome (the in-app browser blocks notifications), turn notifications on in More, and press "Send a test".
+Each is sent once. If the server was down at that moment it still sends a little later (plan-tomorrow up to 59
+minutes, today's plan up to 2 h 59 min, task reminders up to 15 minutes), never later. The server makes its push keys
+(VAPID) on first start and keeps them in the database; see `server/.env.example`.
+
+To try it before deploying: start the app either way (see "Run it locally") and open it in Chrome on this computer
+at http://localhost:5173 (dev) or http://127.0.0.1:3000 (built). Chrome asks to allow notifications when you log in,
+from the banner on Today, or when you switch on a reminder. More → Notifications → "Send a test" sends one, and
+"Check this device" shows which step is missing if nothing arrives.
+
+Chrome only allows notifications on https:// addresses and on localhost. Opening the app on a phone over Wi-Fi
+(http://192.168…) can't show notifications until it's online with https (step 6). For testing before that, add the
+address in the phone's chrome://flags → "Insecure origins treated as secure".

@@ -24,6 +24,7 @@ export function createPush(db, { vapid, subject, send = webpush.sendNotification
   const q = {
     ofUser: db.prepare('SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?'),
     count: db.prepare('SELECT count(*) AS n FROM push_subscriptions WHERE user_id = ?'),
+    known: db.prepare('SELECT 1 FROM push_subscriptions WHERE user_id = ? AND endpoint = ?'),
     // A device that was used by the other user before moves to whoever subscribed it last.
     upsert: db.prepare(`
       INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth) VALUES (?, ?, ?, ?)
@@ -37,6 +38,9 @@ export function createPush(db, { vapid, subject, send = webpush.sendNotification
 
     devices: (userId) => q.count.get(userId).n,
 
+    /** Whether this device's subscription is saved for the user. */
+    knows: (userId, endpoint) => Boolean(q.known.get(userId, endpoint)),
+
     subscribe(userId, { endpoint, p256dh, auth }) {
       q.upsert.run(userId, endpoint, p256dh, auth);
     },
@@ -47,11 +51,13 @@ export function createPush(db, { vapid, subject, send = webpush.sendNotification
 
     /**
      * Sends { title, body, url, tag } to every device of the user. Devices the push service says are gone
-     * (404/410, e.g. the app was uninstalled) are forgotten. Returns { sent, failed }.
+     * (404/410, e.g. the app was uninstalled) are forgotten. Returns { sent, failed, errors }, where errors
+     * says what the push service answered for each failure.
      */
     async sendTo(userId, message, { ttl = 3600 } = {}) {
       let sent = 0;
       let failed = 0;
+      const errors = [];
       for (const sub of q.ofUser.all(userId)) {
         try {
           await send(
@@ -62,11 +68,13 @@ export function createPush(db, { vapid, subject, send = webpush.sendNotification
           sent += 1;
         } catch (err) {
           failed += 1;
-          if (err.statusCode === 404 || err.statusCode === 410) q.remove.run(sub.endpoint);
+          const gone = err.statusCode === 404 || err.statusCode === 410;
+          errors.push({ status: err.statusCode ?? null, message: gone ? 'This device unsubscribed; it was removed' : String(err.body || err.message).slice(0, 300) });
+          if (gone) q.remove.run(sub.endpoint);
           else console.error(`Push to user ${userId} failed:`, err.statusCode ?? '', err.body ?? err.message);
         }
       }
-      return { sent, failed };
+      return { sent, failed, errors };
     },
   };
 }

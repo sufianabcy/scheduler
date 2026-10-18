@@ -63,3 +63,11 @@ export function boolean(value, field) {
   if (typeof value !== 'boolean') throw badRequest(`${field} must be true or false`);
   return value;
 }
+
+/** A time of day as 'HH:MM' (24-hour). */
+export function time(value, field = 'time') {
+  if (typeof value !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+    throw badRequest(`${field} must be a time like 09:30`);
+  }
+  return value;
+}

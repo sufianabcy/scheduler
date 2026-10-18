@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { Icon } from './Icon.jsx';
 
 /** Round tick box. Plays the web-shot animation when it becomes ticked. */
-export function Check({ checked, disabled, onChange, label }) {
+export function Check({ checked, disabled, onChange, label, priority }) {
   const [shot, setShot] = useState(false);
   const timer = useRef();
 
@@ -19,7 +19,7 @@ export function Check({ checked, disabled, onChange, label }) {
     <button
       type="button"
       role="checkbox"
-      class={`check${shot ? ' shot' : ''}`}
+      class={`check${shot ? ' shot' : ''}${priority ? ` prio-${priority}` : ''}`}
       aria-checked={checked ? 'true' : 'false'}
       aria-label={label}
       disabled={disabled}
@@ -126,16 +126,17 @@ export function AddRow({ placeholder, onAdd, extra }) {
   );
 }
 
-export function MoveButtons({ index, count, onMove, label }) {
+/** Up/down buttons. `upDisabled`/`downDisabled` block moves the list's own order wouldn't show (e.g. across priorities). */
+export function MoveButtons({ index, count, onMove, label, upDisabled = false, downDisabled = false }) {
   return (
     <>
-      <button type="button" class="icon-btn" disabled={index === 0} aria-label={`Move ${label} up`} onClick={() => onMove(-1)}>
+      <button type="button" class="icon-btn" disabled={index === 0 || upDisabled} aria-label={`Move ${label} up`} onClick={() => onMove(-1)}>
         <Icon name="up" size={18} />
       </button>
       <button
         type="button"
         class="icon-btn"
-        disabled={index === count - 1}
+        disabled={index === count - 1 || downDisabled}
         aria-label={`Move ${label} down`}
         onClick={() => onMove(1)}
       >

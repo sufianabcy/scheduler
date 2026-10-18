@@ -1,87 +1,113 @@
 import { useEffect, useState } from 'preact/hooks';
 import { del, get, patch, post } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
-import { InlineEdit, LoadError, Loading } from '../components/ui.jsx';
+import { PriorityPicker, ReminderPicker, RepeatPicker } from '../components/TaskOptions.jsx';
+import { LoadError, Loading } from '../components/ui.jsx';
+import { formatTime } from '../dates.js';
 import { attempt, useLoad } from '../hooks.js';
-import { disablePush, enablePush, pushState } from '../push.js';
+import { diagnose, disablePush, enablePush, ensurePush, onPushChange, pushProblem, pushState } from '../push.js';
+import { describeRepeat, repeatBody, sameRepeat } from '../repeat.js';
 import { toast } from '../toast.js';
 import { currentTheme, setTheme } from '../theme.js';
 
-const DAY_NAMES = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+/** A repeating task in More: tap its name to change the title, repeat or reminder. */
+function RuleRow({ rule, onChanged }) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(rule.title);
+  const [repeat, setRepeat] = useState(rule);
+  const [remindAt, setRemindAt] = useState(rule.remindAt);
+  const [priority, setPriority] = useState(rule.priority);
 
-function WeekdayChips({ value, onChange, weekdays }) {
-  const toggle = (day) => {
-    const next = value.includes(day) ? value.filter((d) => d !== day) : weekdays.filter((d) => d === day || value.includes(d));
-    if (next.length > 0) onChange(next);
+  const run = async (promise) => {
+    if ((await attempt(promise)) !== undefined) onChanged();
   };
+  const save = async (e) => {
+    e.preventDefault();
+    const body = {};
+    if (title.trim() && title.trim() !== rule.title) body.title = title.trim();
+    if (remindAt !== rule.remindAt) body.remindAt = remindAt;
+    if (priority !== rule.priority) body.priority = priority;
+    if (repeat && !sameRepeat(repeat, rule)) body.repeat = repeatBody(repeat);
+    if (Object.keys(body).length === 0) return setEditing(false);
+    if (await attempt(patch(`/repeating/${rule.id}`, body))) {
+      setEditing(false);
+      onChanged();
+    }
+  };
+
   return (
-    <div class="chips" role="group" aria-label="Weekdays">
-      {weekdays.map((day) => (
-        <button key={day} type="button" class="chip" aria-pressed={value.includes(day)} onClick={() => toggle(day)}>
-          {DAY_NAMES[day]}
+    <li class={`row${rule.active ? '' : ' is-locked'}`} style={{ flexWrap: 'wrap' }}>
+      <div class="row-main">
+        <button type="button" class="title-button row-title" aria-expanded={editing} onClick={() => setEditing(!editing)}>
+          {rule.title}
         </button>
-      ))}
-    </div>
+        <div class="row-meta meta-line">
+          {rule.priority && (
+            <span class={`prio-text prio-${rule.priority}`}>
+              <Icon name="flag" size={13} /> P{rule.priority}
+            </span>
+          )}
+          <span>
+            <Icon name="repeat" size={13} /> {describeRepeat(rule, rule.startDay)}
+          </span>
+          {rule.remindAt && (
+            <span>
+              <Icon name="bell" size={13} /> {formatTime(rule.remindAt)}
+            </span>
+          )}
+          {!rule.active && <span>paused</span>}
+        </div>
+      </div>
+      <button type="button" class="btn btn-small" onClick={() => run(patch(`/repeating/${rule.id}`, { active: !rule.active }))}>
+        {rule.active ? 'Pause' : 'Resume'}
+      </button>
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label={`Delete ${rule.title}`}
+        onClick={() => confirm(`Stop repeating "${rule.title}"? Past days keep their copies.`) && run(del(`/repeating/${rule.id}`))}
+      >
+        <Icon name="trash" size={18} />
+      </button>
+      {editing && (
+        <form class="editor" onSubmit={save}>
+          <div class="field">
+            <label for={`rule-${rule.id}`}>Task</label>
+            <input id={`rule-${rule.id}`} class="input" maxLength={200} value={title} onInput={(e) => setTitle(e.currentTarget.value)} />
+          </div>
+          <PriorityPicker value={priority} onChange={setPriority} />
+          <RepeatPicker value={repeat} day={rule.startDay} onChange={(r) => r && setRepeat(r)} />
+          <ReminderPicker value={remindAt} onChange={setRemindAt} />
+          <div class="btn-row">
+            <button class="btn btn-primary btn-small" type="submit" disabled={!title.trim()}>
+              Save
+            </button>
+            <button class="btn btn-ghost btn-small" type="button" onClick={() => setEditing(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </li>
   );
 }
 
 function Repeating() {
   const { data, error, reload } = useLoad(() => get('/repeating'), []);
-  const [title, setTitle] = useState('');
-  const [days, setDays] = useState(['mon', 'tue', 'wed', 'thu', 'fri']);
-
   if (!data) return error ? <LoadError error={error} retry={reload} /> : <Loading />;
-
-  const run = async (promise) => {
-    if ((await attempt(promise)) !== undefined) reload();
-  };
-  const add = async (e) => {
-    e.preventDefault();
-    if (await attempt(post('/repeating', { title: title.trim(), weekdays: days }))) {
-      setTitle('');
-      reload();
-    }
-  };
 
   return (
     <div class="card">
       <ul class="list">
         {data.rules.map((rule) => (
-          <li key={rule.id} class={`row${rule.active ? '' : ' is-locked'}`} style={{ flexWrap: 'wrap', paddingTop: '12px', paddingBottom: '12px' }}>
-            <div class="row-main">
-              <InlineEdit value={rule.title} label="repeating task" onSave={(t) => run(patch(`/repeating/${rule.id}`, { title: t }))} />
-              {!rule.active && <div class="row-meta">Paused</div>}
-            </div>
-            <button type="button" class="btn btn-small" onClick={() => run(patch(`/repeating/${rule.id}`, { active: !rule.active }))}>
-              {rule.active ? 'Pause' : 'Resume'}
-            </button>
-            <button
-              type="button"
-              class="icon-btn"
-              aria-label={`Delete ${rule.title}`}
-              onClick={() => confirm(`Stop repeating "${rule.title}"?`) && run(del(`/repeating/${rule.id}`))}
-            >
-              <Icon name="trash" size={18} />
-            </button>
-            <div style={{ width: '100%', marginTop: '8px' }}>
-              <WeekdayChips value={rule.weekdays} weekdays={data.weekdays} onChange={(weekdays) => run(patch(`/repeating/${rule.id}`, { weekdays }))} />
-            </div>
-          </li>
+          <RuleRow key={rule.id} rule={rule} onChanged={reload} />
         ))}
-        {data.rules.length === 0 && <li class="empty">No repeating tasks yet, e.g. "Gym" every weekday.</li>}
+        {data.rules.length === 0 && (
+          <li class="empty">
+            No repeating tasks yet. When adding a task, tap the <Icon name="bell" size={14} /> to make it repeat.
+          </li>
+        )}
       </ul>
-      <form class="card-pad" style={{ borderTop: '1px solid var(--border)' }} onSubmit={add}>
-        <div class="field">
-          <label for="repeat-title">New repeating task</label>
-          <input id="repeat-title" class="input" maxLength={200} value={title} placeholder="Gym" onInput={(e) => setTitle(e.currentTarget.value)} />
-        </div>
-        <div class="field">
-          <WeekdayChips value={days} weekdays={data.weekdays} onChange={setDays} />
-        </div>
-        <button class="btn btn-primary btn-small" type="submit" disabled={!title.trim()}>
-          <Icon name="plus" size={16} /> Add
-        </button>
-      </form>
     </div>
   );
 }
@@ -115,13 +141,91 @@ function Templates() {
   );
 }
 
-const PUSH_TEXT = {
-  unsupported: "This browser can't show notifications. On Android, use Chrome.",
-  'no-worker': 'Notifications only work in the built or installed app, not the development server.',
-  denied: "Notifications are blocked for this site. Allow them in the browser's site settings, then come back here.",
-  off: 'Off on this device.',
-  on: 'On for this device.',
-};
+const pushText = (state) => pushProblem(state) ?? { off: 'Off on this device.', on: 'On for this device.' }[state];
+
+/** Each step notifications need on this device, ticked or crossed, to find what's missing. */
+function DeviceCheck() {
+  const [steps, setSteps] = useState(null);
+  const run = () => diagnose().then(setSteps, (err) => toast(err.message));
+  if (!steps) {
+    return (
+      <button type="button" class="link-button small" onClick={run}>
+        Check this device
+      </button>
+    );
+  }
+  return (
+    <ul class="list small" style={{ width: '100%' }}>
+      {steps.map((s) => (
+        <li key={s.label} class="meta-line" style={{ padding: '3px 0' }}>
+          <span class={s.ok ? 'prio-text prio-3' : 'prio-text prio-1'}>{s.ok ? '✓' : '✗'}</span> {s.label}
+        </li>
+      ))}
+      <li style={{ padding: '6px 0 0' }}>
+        <button type="button" class="link-button small" onClick={run}>
+          Check again
+        </button>
+      </li>
+    </ul>
+  );
+}
+
+/**
+ * When the two daily notifications come, or whether they come at all. Saved for your account.
+ * Switching one on asks this device for notification permission if it doesn't have it yet.
+ */
+function NotificationTimes({ onPushChange }) {
+  const { data, error, reload, setData } = useLoad(() => get('/settings/notifications'), []);
+  if (!data) return error ? <li class="row muted">{error.message}</li> : null;
+
+  const save = async (changes) => {
+    const res = await attempt(patch('/settings/notifications', changes));
+    if (res) setData(res);
+    else reload();
+  };
+  const switchOn = async (key, on) => {
+    // Ask for permission first: browsers only show the prompt right after a tap.
+    if (on) {
+      try {
+        const before = 'Notification' in window ? Notification.permission : null;
+        if ((await ensurePush()) === 'on' && before !== 'granted') toast('Notifications turned on for this device');
+      } catch (err) {
+        toast(err.message);
+      }
+      onPushChange();
+    }
+    await save({ [key]: { on } });
+  };
+  const rows = [
+    { key: 'eveningReminder', label: 'Plan-tomorrow reminder', hint: 'Skipped if tomorrow already has tasks', min: '12:00', max: '23:59' },
+    { key: 'morningSummary', label: "Today's plan", hint: "What's on today and what's unfinished", min: '00:00', max: '12:00' },
+  ];
+
+  return rows.map((r) => (
+    <li key={r.key} class="row">
+      <label class="toggle-row row-main">
+        <input type="checkbox" checked={data[r.key].on} onChange={(e) => switchOn(r.key, e.currentTarget.checked)} />
+        <span>
+          {r.label}
+          <div class="row-meta" style={{ fontWeight: 400 }}>
+            {r.hint}
+          </div>
+        </span>
+      </label>
+      <input
+        type="time"
+        class="input"
+        style={{ width: 'auto' }}
+        aria-label={`${r.label} time`}
+        min={r.min}
+        max={r.max}
+        disabled={!data[r.key].on}
+        value={data[r.key].time}
+        onChange={(e) => e.currentTarget.value && save({ [r.key]: { time: e.currentTarget.value } })}
+      />
+    </li>
+  ));
+}
 
 function Notifications() {
   const [state, setState] = useState(null);
@@ -129,6 +233,7 @@ function Notifications() {
   const refresh = () => pushState().then(setState, () => setState('unsupported'));
   useEffect(() => {
     refresh();
+    return onPushChange(refresh);
   }, []);
 
   const run = async (fn, done) => {
@@ -145,7 +250,8 @@ function Notifications() {
   const test = () =>
     run(async () => {
       const r = await post('/push/test');
-      toast(r.failed === 0 ? 'Test sent. It should appear in a few seconds.' : `Sent to ${r.sent} device(s), ${r.failed} failed.`);
+      if (r.failed === 0) toast('Test sent. It should appear in a few seconds. If not, check your system notification settings for Chrome.');
+      else toast(`Sent to ${r.sent} device(s), ${r.failed} failed: ${r.errors?.[0]?.message ?? 'unknown error'}`);
     });
 
   return (
@@ -154,7 +260,7 @@ function Notifications() {
         <li class="row" style={{ flexWrap: 'wrap', paddingTop: '12px', paddingBottom: '12px' }}>
           <div class="row-main">
             <div>Reminders</div>
-            <div class="row-meta">{state ? PUSH_TEXT[state] : 'Checking…'}</div>
+            <div class="row-meta">{state ? pushText(state) : 'Checking…'}</div>
           </div>
           {state === 'off' && (
             <button type="button" class="btn btn-primary btn-small" disabled={busy} onClick={() => run(enablePush, 'Notifications turned on')}>
@@ -171,11 +277,16 @@ function Notifications() {
               </button>
             </span>
           )}
+          <div style={{ width: '100%', marginTop: '6px' }}>
+            <DeviceCheck />
+          </div>
         </li>
+        <NotificationTimes onPushChange={refresh} />
         <li class="row">
           <div class="row-main row-meta">
-            11 PM: a reminder to plan tomorrow (skipped if you already have). 6 AM: today's plan and what's unfinished.
-            On a Mac, Chrome must be running, and Chrome must be allowed in System Settings → Notifications.
+            Task reminders are set on each task. Chrome must be allowed to show notifications by the system too:
+            Mac: System Settings → Notifications → Google Chrome. Windows: Settings → System → Notifications →
+            Google Chrome. Android: Settings → Apps → Chrome → Notifications. On a computer, Chrome has to be running.
           </div>
         </li>
       </ul>

@@ -1,18 +1,11 @@
 import { useState } from 'preact/hooks';
 import { del, get, patch, post } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
-import { TaskRow } from '../components/TaskRow.jsx';
-import { AddRow, Check, LoadError, Loading, Progress } from '../components/ui.jsx';
-import { addDays, dayLabel, hourIST, longDay } from '../dates.js';
-import { attempt, useLoad } from '../hooks.js';
-
-function greeting() {
-  const h = hourIST();
-  if (h < 5) return 'Late night';
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
+import { NotificationBanner } from '../components/NotificationBanner.jsx';
+import { NewTask, TaskRow } from '../components/TaskRow.jsx';
+import { Check, LoadError, Loading, Progress } from '../components/ui.jsx';
+import { addDays, clockIST, dayLabel, fullDate, weekdayName } from '../dates.js';
+import { attempt, useLoad, useNow } from '../hooks.js';
 
 /** A monthly-goal task with a date of today (or earlier). Only the goal's current task can be finished. */
 function GoalTaskRow({ item, onChanged }) {
@@ -122,25 +115,28 @@ export function ProjectCard({ project }) {
 }
 
 export function Today() {
+  const now = useNow();
   const { data, error, loading, reload } = useLoad(() => get('/today'), []);
 
   if (!data) return error ? <LoadError error={error} retry={reload} /> : <Loading />;
 
   const openCount = data.tasks.filter((t) => t.status === 'open').length + data.goalTasksDue.length;
   const activeProjects = data.projects.filter((p) => !p.done);
-  const add = async (title) => {
-    const ok = await attempt(post(`/days/${data.day}/tasks`, { title }));
-    if (ok) reload();
-    return Boolean(ok);
-  };
 
   return (
     <>
-      <h1 class="page-title">{greeting()}</h1>
+      <div class="title-row">
+        <h1 class="page-title">{weekdayName(data.day)}</h1>
+        <span class="clock" aria-label="Time now">
+          {clockIST(now)}
+        </span>
+      </div>
       <p class="page-sub">
-        {longDay(data.day)} · {openCount === 0 ? 'nothing left today' : `${openCount} to do`}
+        {fullDate(data.day)} · {openCount === 0 ? 'All done' : `${openCount} task${openCount === 1 ? '' : 's'} to do`}
         {loading && ' · updating…'}
       </p>
+
+      <NotificationBanner />
 
       <section class="section" aria-labelledby="today-title">
         <div class="section-head">
@@ -163,7 +159,7 @@ export function Today() {
               <li class="empty">Nothing planned yet. Add your first task below.</li>
             )}
           </ul>
-          <AddRow placeholder="Add a task for today" onAdd={add} />
+          <NewTask day={data.day} placeholder={'Add a task, e.g. "call bank 3pm p1"'} onAdded={reload} />
         </div>
       </section>
 

@@ -67,6 +67,8 @@ describe('push API', () => {
       assert.deepEqual(res.body, { devices: 1 });
       res = await api('POST', '/api/push/subscribe', subscription);
       assert.deepEqual(res.body, { devices: 1 }, 'subscribing again does not duplicate');
+      assert.deepEqual((await api('POST', '/api/push/status', { endpoint: subscription.endpoint })).body, { known: true });
+      assert.deepEqual((await other('POST', '/api/push/status', { endpoint: subscription.endpoint })).body, { known: false });
 
       // The same device used by the other user afterwards moves to them.
       res = await other('POST', '/api/push/subscribe', subscription);
@@ -119,7 +121,7 @@ describe('sending', () => {
     push.subscribe(user.id, { endpoint: browser.subscription.endpoint, ...browser.subscription.keys });
 
     const message = { title: 'Today: 2 tasks', body: 'Gym · Read', url: '/#/', tag: 'morning' };
-    assert.deepEqual(await push.sendTo(user.id, message, { ttl: 600 }), { sent: 1, failed: 0 });
+    assert.deepEqual(await push.sendTo(user.id, message, { ttl: 600 }), { sent: 1, failed: 0, errors: [] });
 
     // Payload: aes128gcm-encrypted to the browser's key.
     assert.equal(request.headers['Content-Encoding'], 'aes128gcm');
@@ -160,7 +162,10 @@ describe('sending', () => {
     const realError = console.error;
     console.error = () => {};
     try {
-      assert.deepEqual(await push.sendTo(user.id, { title: 'x' }), { sent: 1, failed: 2 });
+      const result = await push.sendTo(user.id, { title: 'x' });
+      assert.equal(result.sent, 1);
+      assert.equal(result.failed, 2);
+      assert.deepEqual(result.errors.map((e) => e.status).sort(), [410, 500]);
     } finally {
       console.error = realError;
     }
@@ -262,7 +267,7 @@ describe('daily notifications', () => {
       setClock(at('2026-10-16', '23:30'));
       await notifier.runDue();
       assert.equal(calls.length, 1, 'skipped: Saturday is planned');
-      assert.ok(t.db.prepare("SELECT 1 FROM job_runs WHERE name = 'evening' AND run_key = '2026-10-16'").get());
+      assert.ok(t.db.prepare("SELECT 1 FROM job_runs WHERE name = 'evening' AND run_key = ?").get("2026-10-16#1"));
     } finally {
       await t.close();
     }

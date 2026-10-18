@@ -1,20 +1,26 @@
 import { createDaily } from './daily.js';
 import { createGoals } from './goals.js';
-import { addDays, dayOf, timeOf } from './time.js';
+import { createSettings } from './settings.js';
+import { addDays, dayOf, formatTime, minutesOf, timeFromMinutes, timeOf } from './time.js';
 
 const MAX_LISTED = 3;
+// How late a notification may still go out if the server was down at its time.
+const DAILY_GRACE_MINUTES = { evening: 59, morning: 179 };
+const TASK_GRACE_MINUTES = 15;
 
 /**
- * The two daily notifications (IST), sent to every device that turned notifications on:
- * - 23:00 "Plan tomorrow", skipped for a user who already added tasks for tomorrow.
- * - 06:00 today's plan: how many tasks, the first few, and how many are in Unfinished.
+ * Notifications, sent to every device that turned them on. Times are IST and chosen by each user:
+ * - "Plan tomorrow" (default 23:00): skipped for a user who already added tasks for tomorrow.
+ * - Morning summary (default 06:00): how many tasks today, the first few, and how many are in Unfinished.
+ * - Task reminders: at the time set on a task (or on a repeating task, for each of its copies), if it's still open.
  *
- * Each is sent at most once a day. If the server was down at the exact time, it still sends within the window
- * (23:00–23:59, 06:00–08:59) but not later, so a 6 AM summary never arrives in the afternoon.
+ * Each goes out once. If the server was down at the time, it still goes out a little later (see the grace
+ * minutes above, never past midnight), but not hours late.
  */
 export function createNotifier(db, { push, now = () => new Date() }) {
   const daily = createDaily(db);
   const goals = createGoals(db);
+  const settings = createSettings(db);
 
   const q = {
     users: db.prepare('SELECT DISTINCT user_id FROM push_subscriptions ORDER BY user_id'),
@@ -23,6 +29,12 @@ export function createNotifier(db, { push, now = () => new Date() }) {
       WHERE user_id = ? AND day = ? AND repeating_task_id IS NULL AND status = 'open'`),
     hasRun: db.prepare('SELECT 1 FROM job_runs WHERE name = ? AND run_key = ?'),
     markRun: db.prepare('INSERT OR IGNORE INTO job_runs (name, run_key) VALUES (?, ?)'),
+    dueReminders: db.prepare(`
+      SELECT id, title, remind_at FROM daily_tasks
+      WHERE user_id = ? AND day = ? AND status = 'open' AND remind_at IS NOT NULL AND reminded_at IS NULL
+        AND remind_at <= ? AND remind_at >= ?
+      ORDER BY remind_at, id`),
+    markReminded: db.prepare("UPDATE daily_tasks SET reminded_at = datetime('now') WHERE id = ?"),
   };
 
   function evening(userId, today) {
@@ -62,30 +74,58 @@ export function createNotifier(db, { push, now = () => new Date() }) {
     };
   }
 
+  /** The user's time for a daily notification, or null if they turned it off. */
+  function scheduled(name, userId) {
+    const s = settings.row(userId);
+    if (name === 'evening') return s.evening_on ? s.evening_time : null;
+    return s.morning_on ? s.morning_time : null;
+  }
+
+  /** True if `time` is at or after `start`, but no more than `grace` minutes after it (and not past midnight). */
+  const inWindow = (time, start, grace) => time >= start && minutesOf(time) - minutesOf(start) <= grace;
+
   const JOBS = [
-    { name: 'evening', from: '23:00', until: '23:59', ttlSeconds: 60 * 60, build: evening },
-    { name: 'morning', from: '06:00', until: '08:59', ttlSeconds: 4 * 60 * 60, build: morning },
+    { name: 'evening', ttlSeconds: 60 * 60, build: evening },
+    { name: 'morning', ttlSeconds: 4 * 60 * 60, build: morning },
   ];
 
+  async function dailyNotifications(userId, today, time, results) {
+    for (const job of JOBS) {
+      const start = scheduled(job.name, userId);
+      if (!start || !inWindow(time, start, DAILY_GRACE_MINUTES[job.name])) continue;
+      const key = `${today}#${userId}`;
+      if (q.hasRun.get(job.name, key)) continue;
+      // Marked before sending, so a crash or a slow push service never leads to a second copy.
+      q.markRun.run(job.name, key);
+      const message = job.build(userId, today);
+      if (!message) continue;
+      results.push({ job: job.name, userId, ...(await push.sendTo(userId, message, { ttl: job.ttlSeconds })) });
+    }
+  }
+
+  async function taskReminders(userId, today, time, results) {
+    // Makes sure today's repeating tasks exist, so their reminders fire even if the app wasn't opened today.
+    daily.generate(userId, today);
+    const earliest = timeFromMinutes(Math.max(0, minutesOf(time) - TASK_GRACE_MINUTES));
+    for (const task of q.dueReminders.all(userId, today, time, earliest)) {
+      q.markReminded.run(task.id);
+      const message = { title: task.title, body: `Reminder · ${formatTime(task.remind_at)}`, url: '/#/', tag: `task-${task.id}` };
+      results.push({ job: 'task', userId, taskId: task.id, ...(await push.sendTo(userId, message, { ttl: 60 * 60 })) });
+    }
+  }
+
   return {
-    /** The message a user would get from a job on that day, or null. Used by tests. */
+    /** The message a user would get from a daily notification on that day, or null. Used by tests. */
     preview: (name, userId, at = now()) => JOBS.find((j) => j.name === name).build(userId, dayOf(at)),
 
-    /** Sends any notification that is due now and hasn't been sent today. Returns what was sent. */
+    /** Sends whatever is due now and hasn't been sent yet. Returns what was sent. */
     async runDue(at = now()) {
       const today = dayOf(at);
       const time = timeOf(at);
       const results = [];
-      for (const job of JOBS) {
-        if (time < job.from || time > job.until || q.hasRun.get(job.name, today)) continue;
-        // Marked before sending, so a crash or a slow push service never leads to a second copy.
-        q.markRun.run(job.name, today);
-        for (const { user_id: userId } of q.users.all()) {
-          const message = job.build(userId, today);
-          if (!message) continue;
-          const result = await push.sendTo(userId, message, { ttl: job.ttlSeconds });
-          results.push({ job: job.name, userId, ...result });
-        }
+      for (const { user_id: userId } of q.users.all()) {
+        await dailyNotifications(userId, today, time, results);
+        await taskReminders(userId, today, time, results);
       }
       return results;
     },

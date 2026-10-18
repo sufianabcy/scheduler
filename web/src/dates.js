@@ -36,3 +36,22 @@ export const longDay = (day) =>
 /** e.g. "October 2026". */
 export const monthLabel = (month) =>
   new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+/** e.g. "Sunday". */
+export const weekdayName = (day) => asDate(day).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
+
+/** e.g. "18 October 2026". */
+export const fullDate = (day) =>
+  asDate(day).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+const clockFormat = new Intl.DateTimeFormat('en-US', { timeZone: TIME_ZONE, hour: 'numeric', minute: '2-digit', hour12: true });
+
+/** The time now in IST, e.g. "9:27 PM". */
+export const clockIST = (date = new Date()) => clockFormat.format(date);
+
+/** 'HH:MM' (24-hour, as stored) → "9:27 PM". */
+export function formatTime(hhmm) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}

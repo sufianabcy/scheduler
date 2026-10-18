@@ -7,8 +7,14 @@
 
 const SHELL = 'shell-v1';
 const API = 'api';
+// Registered as /sw.js?dev by the development server: notifications only, no caching.
+const DEV = new URL(self.location.href).searchParams.has('dev');
 
 self.addEventListener('install', (event) => {
+  if (DEV) {
+    self.skipWaiting();
+    return;
+  }
   event.waitUntil(
     caches
       .open(SHELL)
@@ -29,7 +35,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
-  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (DEV || request.method !== 'GET' || url.origin !== self.location.origin) return;
 
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request, API));

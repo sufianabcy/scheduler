@@ -42,6 +42,11 @@ export function pushRoutes({ push }) {
     res.json({ devices: push.devices(req.user.id) });
   });
 
+  // Body: { endpoint } — is this device's subscription saved for you? (for "Check this device")
+  router.post('/status', (req, res) => {
+    res.json({ known: push.knows(req.user.id, endpoint(req.body?.endpoint)) });
+  });
+
   // Body: { endpoint }
   router.post('/unsubscribe', (req, res) => {
     push.unsubscribe(req.user.id, endpoint(req.body?.endpoint));

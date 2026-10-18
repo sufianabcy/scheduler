@@ -20,6 +20,8 @@ const PATHS = {
   moon: 'M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z',
   logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',
   template: 'M4 4h16v6H4zM4 14h7v6H4zM15 14h5v6h-5z',
+  bell: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',
+  flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
 };
 
 export function Icon({ name, size = 20, ...rest }) {

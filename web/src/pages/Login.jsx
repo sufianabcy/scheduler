@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { post } from '../api.js';
+import { ensurePush } from '../push.js';
 
 export function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -13,6 +14,9 @@ export function Login({ onLogin }) {
     setError(null);
     try {
       const { user } = await post('/auth/login', { email, password });
+      // Ask for notifications right away on a device that hasn't been asked yet; the Log in tap is the
+      // user action Chrome wants before it shows its prompt. Logging in doesn't wait for the answer.
+      if ('Notification' in window && Notification.permission === 'default') ensurePush().catch(() => {});
       onLogin(user);
     } catch (err) {
       setError(err.message);

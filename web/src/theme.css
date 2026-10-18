@@ -21,6 +21,9 @@
   --blue-soft: rgba(59, 108, 255, 0.18);
   --done: #3b6cff;
   --danger: #ff6b6b;
+  --p1: #ff4b4b;
+  --p2: #f5a524;
+  --p3: #5b8cff;
 
   --web-line: rgba(255, 255, 255, 0.05);
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
@@ -43,6 +46,9 @@
   --blue-soft: rgba(31, 79, 214, 0.1);
   --done: #1f4fd6;
   --danger: #c62828;
+  --p1: #d22a2a;
+  --p2: #c77700;
+  --p3: #1f4fd6;
 
   --web-line: rgba(17, 20, 42, 0.06);
   --shadow: 0 6px 20px rgba(17, 20, 42, 0.08);

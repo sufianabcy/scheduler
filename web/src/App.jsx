@@ -71,8 +71,22 @@ export function App() {
     checkSession();
   }, []);
 
+  // Keep this device's notifications working: sync when logged in, retry a few times if Chrome's push service
+  // is slow to answer (it can be on a fresh install), and check again whenever the app comes back to the front.
   useEffect(() => {
-    if (user) syncPush().catch(() => {});
+    if (!user) return undefined;
+    let timer;
+    const trySync = (attemptNo) =>
+      syncPush().catch(() => {
+        if (attemptNo < 4) timer = setTimeout(() => trySync(attemptNo + 1), 5000 * 2 ** attemptNo);
+      });
+    trySync(0);
+    const onVisible = () => document.visibilityState === 'visible' && syncPush().catch(() => {});
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user]);
 
   const logout = async () => {

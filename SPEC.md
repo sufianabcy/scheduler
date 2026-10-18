@@ -18,8 +18,12 @@ Status: draft, updated 2026-10-16. Items marked **(assumed)** still need your co
 
 ## 2. Daily plan
 
-- Each day has a plain checklist. Tasks have no times.
-- Repeating tasks (every day, or chosen weekdays) are added to each day automatically.
+- Each day has a plain checklist. Tasks have no start times (only optional reminders).
+- Any task can repeat, set when adding or editing it (like Google Tasks): daily, every weekday, weekly on chosen
+  days, monthly, or custom (every N days/weeks/months, optionally until a date). Copies are added automatically.
+- Any task can have a reminder at a chosen time; repeating tasks remind on every copy.
+- Any task can have a priority (P1–P3); a day lists P1 first.
+- Quick add: one typed line like "gym tomorrow 7am every mon wed p1" sets the day, reminder, repeat and priority.
 - Today's view also shows:
   - monthly-goal tasks that have a date set for today
   - the current open step of each project and monthly goal
@@ -36,10 +40,13 @@ Status: draft, updated 2026-10-16. Items marked **(assumed)** still need your co
 
 ### Notifications (IST)
 
-| Time  | Message                                              | Rule                                              |
-|-------|------------------------------------------------------|---------------------------------------------------|
-| 23:00 | "Plan tomorrow"                                      | Skipped if tomorrow already has tasks you added   |
-| 06:00 | "Today: N tasks", the first few, and unfinished count | Always sent                                       |
+Each user picks the times (More → Notifications) and can turn either one off.
+
+| Default | Message                                               | Rule                                              |
+|---------|-------------------------------------------------------|---------------------------------------------------|
+| 23:00   | "Plan tomorrow"                                       | Skipped if tomorrow already has tasks you added   |
+| 06:00   | "Today: N tasks", the first few, and unfinished count | Always sent while on                              |
+| per task | The task's title                                     | At the task's reminder time, while it's still open |
 
 ## 3. Monthly goals
 

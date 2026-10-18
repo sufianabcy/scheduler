@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "icons": "python3 scripts/make_icons.py"
+    "icons": "python3 scripts/make_icons.py",
+    "test": "node --test 'test/**/*.test.js'"
   },
   "dependencies": {
     "preact": "10.29.8"

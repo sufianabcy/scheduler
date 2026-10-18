@@ -11,6 +11,7 @@ import { dailyRoutes } from './routes/daily.js';
 import { goalRoutes } from './routes/goals.js';
 import { projectRoutes } from './routes/projects.js';
 import { pushRoutes } from './routes/push.js';
+import { settingsRoutes } from './routes/settings.js';
 import { templateRoutes } from './routes/templates.js';
 
 // Only this site's own files may load. Inline style attributes are allowed for progress bar widths.
@@ -76,6 +77,7 @@ export function createApp({
   api.use('/templates', templateRoutes({ db }));
   api.use('/goals', goalRoutes({ db, now }));
   api.use('/push', pushRoutes({ push }));
+  api.use('/settings', settingsRoutes({ db }));
   api.use(dailyRoutes({ db, now }));
 
   api.use((req, res) => res.status(404).json({ error: 'Not found' }));

@@ -1,22 +1,18 @@
-import { get, post, put } from '../api.js';
+import { get, put } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
-import { TaskRow } from '../components/TaskRow.jsx';
-import { AddRow, LoadError, Loading, MoveButtons, moved } from '../components/ui.jsx';
-import { addDays, dayLabel, hourIST, longDay, todayIST } from '../dates.js';
-import { attempt, go, useLoad } from '../hooks.js';
+import { NewTask, TaskRow } from '../components/TaskRow.jsx';
+import { LoadError, Loading, MoveButtons, moved } from '../components/ui.jsx';
+import { addDays, clockIST, dayLabel, hourIST, longDay, todayIST } from '../dates.js';
+import { attempt, go, useLoad, useNow } from '../hooks.js';
 
 /** Planning a day. Opens on tomorrow in the evening (from 6 PM), otherwise today. */
 export function Plan({ day: requested }) {
+  const now = useNow();
   const today = todayIST();
   const day = requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) ? requested : hourIST() >= 18 ? addDays(today, 1) : today;
   const past = day < today;
   const { data, error, loading, reload, setData } = useLoad(() => get(`/days/${day}`), [day]);
 
-  const add = async (title) => {
-    const res = await attempt(post(`/days/${day}/tasks`, { title }));
-    if (res) setData(res);
-    return Boolean(res);
-  };
   const reorder = async (index, direction) => {
     const taskIds = moved(data.tasks.map((t) => t.id), index, direction);
     const res = await attempt(put(`/days/${day}/order`, { taskIds }));
@@ -34,7 +30,10 @@ export function Plan({ day: requested }) {
         </button>
         <div class="switcher-label">
           <div>{dayLabel(day, today)}</div>
-          <div class="small muted">{longDay(day)}</div>
+          <div class="small muted">
+            {longDay(day)}
+            {day === today && ` · ${clockIST(now)}`}
+          </div>
         </div>
         <button type="button" class="icon-btn" aria-label="Next day" onClick={() => go(`/plan/${addDays(day, 1)}`)}>
           <Icon name="right" />
@@ -68,17 +67,28 @@ export function Plan({ day: requested }) {
           <ul class="list">
             {data.tasks.map((task, i) => (
               <TaskRow key={task.id} task={task} onChanged={reload} readOnly={past}>
-                {!past && <MoveButtons index={i} count={data.tasks.length} label={task.title} onMove={(d) => reorder(i, d)} />}
+                {!past && (
+                  // Tasks are listed by priority, so moving only happens among tasks of the same priority.
+                  <MoveButtons
+                    index={i}
+                    count={data.tasks.length}
+                    label={task.title}
+                    upDisabled={data.tasks[i - 1]?.priority !== task.priority}
+                    downDisabled={data.tasks[i + 1]?.priority !== task.priority}
+                    onMove={(d) => reorder(i, d)}
+                  />
+                )}
               </TaskRow>
             ))}
             {data.tasks.length === 0 && <li class="empty">{past ? 'Nothing was left on this day.' : 'Nothing planned yet.'}</li>}
           </ul>
-          {!past && <AddRow placeholder={`Add a task for ${dayLabel(day, today).toLowerCase()}`} onAdd={add} />}
+          {!past && <NewTask day={day} placeholder={`Add a task for ${dayLabel(day, today).toLowerCase()}`} onAdded={reload} />}
         </div>
       )}
 
       <p class="small muted" style={{ marginTop: '14px' }}>
-        <Icon name="repeat" size={14} /> Tasks that repeat every week are set up in <a href="#/more">More → Repeating tasks</a>.
+        <Icon name="bell" size={14} /> Type it in one line, like "gym tomorrow 7am every mon wed p1", or use the bell for
+        priority, repeat and reminder. Tap a task's name to change them later.
       </p>
     </>
   );

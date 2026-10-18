@@ -70,3 +70,18 @@ export function useRoute() {
 export const go = (path) => {
   location.hash = path;
 };
+
+/** The current time, updated at the start of every minute (for clocks on screen). */
+export function useNow() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let timer;
+    const tick = () => {
+      setNow(new Date());
+      timer = setTimeout(tick, 60_000 - (Date.now() % 60_000) + 50);
+    };
+    timer = setTimeout(tick, 60_000 - (Date.now() % 60_000) + 50);
+    return () => clearTimeout(timer);
+  }, []);
+  return now;
+}
