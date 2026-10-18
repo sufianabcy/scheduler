@@ -1,7 +1,7 @@
 import { get, put } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
 import { NewTask, TaskRow } from '../components/TaskRow.jsx';
-import { LoadError, Loading, MoveButtons, moved } from '../components/ui.jsx';
+import { LoadError, Loading, MoveButtons, PageHeader, moved } from '../components/ui.jsx';
 import { addDays, clockIST, dayLabel, hourIST, longDay, todayIST } from '../dates.js';
 import { attempt, go, useLoad, useNow } from '../hooks.js';
 
@@ -21,8 +21,7 @@ export function Plan({ day: requested }) {
 
   return (
     <>
-      <h1 class="page-title">Plan</h1>
-      <p class="page-sub">Add what you want to get done. Unticked tasks go to Unfinished at midnight.</p>
+      <PageHeader title="Plan" sub="Add what you want to get done. Unticked tasks go to Unfinished at midnight." />
 
       <div class="switcher">
         <button type="button" class="icon-btn" aria-label="Previous day" onClick={() => go(`/plan/${addDays(day, -1)}`)}>

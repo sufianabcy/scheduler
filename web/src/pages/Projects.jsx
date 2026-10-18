@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { del, get, patch, post, put } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
-import { AddRow, Check, InlineEdit, LoadError, Loading, MoveButtons, Progress, moved } from '../components/ui.jsx';
+import { AddRow, Check, InlineEdit, LoadError, Loading, MoveButtons, PageHeader, Progress, moved } from '../components/ui.jsx';
 import { attempt, go, useLoad } from '../hooks.js';
 import { toast } from '../toast.js';
 import { ProjectCard } from './Today.jsx';
@@ -86,8 +86,7 @@ export function ProjectList() {
 
   return (
     <>
-      <h1 class="page-title">Projects</h1>
-      <p class="page-sub">Steps open one at a time: finish one to unlock the next.</p>
+      <PageHeader title="Projects" sub="Steps open one at a time: finish one to unlock the next." />
 
       {active.length === 0 ? (
         <div class="card empty">No active projects.</div>
@@ -248,13 +247,12 @@ export function ProjectDetail({ id }) {
       <a class="btn btn-ghost btn-small" href="#/projects" style={{ paddingLeft: 0 }}>
         <Icon name="left" size={16} /> Projects
       </a>
-      <h1 class="page-title">
-        <InlineEdit value={project.title} label="project title" onSave={(title) => apply(patch(base, { title }))} />
-      </h1>
-      <p class="page-sub">
-        {project.done ? 'Finished' : `${project.stepsDone} of ${project.stepsTotal} steps done`}
-      </p>
-      <Progress value={project.progress} label="Project progress" />
+      <PageHeader
+        title={<InlineEdit value={project.title} label="project title" onSave={(title) => apply(patch(base, { title }))} />}
+        sub={project.done ? 'Finished' : `${project.stepsDone} of ${project.stepsTotal} steps done`}
+      >
+        <Progress value={project.progress} label="Project progress" />
+      </PageHeader>
 
       <div class="card section">
         <ul class="list">

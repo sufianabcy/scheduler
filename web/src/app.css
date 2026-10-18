@@ -33,29 +33,6 @@ body::before {
   mask: radial-gradient(circle, #000 0 55%, transparent 70%);
 }
 
-/* A few still embers and a faint red glow at the top, like the poster. Fixed and never animated, so the
-   browser paints it once and only composites it while scrolling. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(1.5px 1.5px at 12% 18%, var(--ember), transparent 100%),
-    radial-gradient(2px 2px at 78% 12%, var(--ember), transparent 100%),
-    radial-gradient(1.5px 1.5px at 88% 46%, var(--ember), transparent 100%),
-    radial-gradient(1px 1px at 22% 64%, var(--ember), transparent 100%),
-    radial-gradient(2px 2px at 64% 82%, var(--ember), transparent 100%),
-    radial-gradient(1px 1px at 40% 36%, var(--ember), transparent 100%),
-    radial-gradient(60% 40% at 50% -10%, rgba(216, 38, 44, 0.08), transparent 70%);
-}
-
-/* No embers or glow on the light "paper" theme. */
-:root[data-theme='light'] body::after {
-  display: none;
-}
-
 button,
 input,
 select,
@@ -217,6 +194,130 @@ a:focus-visible {
   text-decoration: none;
 }
 
+/* ---------- Poster header band ----------
+   Text on the left over solid night, Spider-Man on the right, like the poster. Always dark, also in the light
+   theme (a poster pinned on paper), so its colours are fixed rather than tokens. Static: nothing animates. */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  min-height: 132px;
+  margin: 0 0 16px;
+  padding: 18px 20px;
+  border: 1px solid #262c40;
+  border-radius: var(--radius);
+  color: #f2f3f7;
+  background: radial-gradient(70% 120% at 85% 50%, rgba(216, 38, 44, 0.12), transparent 70%), #080a12;
+}
+
+/* The photo, on its own layer so both of its edges can fade into the night (a static mask; never animated).
+   Fixed size and vertically centred, so a taller band (a long title) never makes the face bigger. */
+.hero-art {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  height: 156px;
+  aspect-ratio: 267 / 264;
+  transform: translateY(-50%);
+  background: url('./assets/hero/hero-face.webp') center / cover no-repeat;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 32%, #000 78%, transparent 100%);
+  pointer-events: none;
+}
+
+/* A few still embers over the band. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1.5px 1.5px at 8% 22%, rgba(255, 140, 50, 0.6), transparent 100%),
+    radial-gradient(2px 2px at 34% 14%, rgba(255, 140, 50, 0.55), transparent 100%),
+    radial-gradient(1.5px 1.5px at 52% 70%, rgba(255, 140, 50, 0.5), transparent 100%),
+    radial-gradient(1px 1px at 61% 30%, rgba(255, 140, 50, 0.6), transparent 100%),
+    radial-gradient(2px 2px at 46% 86%, rgba(255, 140, 50, 0.45), transparent 100%),
+    radial-gradient(1px 1px at 22% 78%, rgba(255, 140, 50, 0.5), transparent 100%);
+}
+
+/* Thin red poster line along the bottom edge. */
+.hero::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  right: 40%;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #d8262c, transparent);
+}
+
+.hero-text {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  /* Leave the photo's visible part free: text may only reach into its faded left edge. */
+  max-width: calc(100% - 128px);
+}
+
+.hero-top {
+  display: flex;
+  flex-wrap: wrap; /* on narrow screens the clock drops under the title instead of running into the face */
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 14px;
+}
+
+.hero .page-title {
+  margin: 0;
+  color: #d9b36c; /* gold on night: 10:1 */
+}
+
+.hero .page-sub {
+  margin: 2px 0 0;
+  color: #b9bfd3; /* 11:1 */
+}
+
+.hero .clock {
+  color: #ff5c5c;
+}
+
+.hero .progress-line {
+  margin-top: 10px;
+  max-width: 320px;
+}
+
+.hero .progress {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero .progress-pct {
+  color: #d9b36c;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    min-height: 156px;
+    padding: 22px 28px;
+  }
+
+  .hero-text {
+    max-width: calc(100% - 250px);
+  }
+
+  /* The wider crop, scaled so the head fills the band and the shoulders fall below it; the eyes (32% down
+     the image) sit at the band's middle. */
+  .hero-art {
+    right: 40px;
+    height: 360px;
+    aspect-ratio: 278 / 415;
+    transform: translateY(-32%);
+    background-image: url('./assets/hero/hero-wide.webp');
+  }
+}
+
 /* Display role. Uppercase via text-transform only, so screen readers read normal words. */
 .page-title,
 .brand,
@@ -254,13 +355,6 @@ a:focus-visible {
 
 .section-link::after {
   content: ' ›';
-}
-
-.title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .clock {
@@ -939,7 +1033,7 @@ a:focus-visible {
 
 .login {
   position: relative;
-  z-index: 1; /* above the fixed web and ember layers */
+  z-index: 1; /* above the fixed corner web */
   display: grid;
   place-items: center;
   min-height: 100dvh;
@@ -949,16 +1043,18 @@ a:focus-visible {
 .login .card {
   width: 100%;
   max-width: 380px;
-  padding: 28px 24px;
+  overflow: hidden;
+  padding: 0 24px 28px;
 }
 
-.login-logo {
-  display: block;
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 14px;
-  border-radius: 18px;
-  box-shadow: var(--shadow);
+/* The poster at the top of the login card, fading into the card. */
+.login-hero {
+  height: 160px;
+  margin: 0 -24px 14px;
+  background:
+    linear-gradient(0deg, var(--surface) 0%, transparent 60%),
+    url('./assets/hero/hero-wide.webp') center 20% / cover no-repeat,
+    #080a12;
 }
 
 .login h1 {

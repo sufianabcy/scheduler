@@ -3,7 +3,7 @@ import { del, get, patch, post } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
 import { NotificationBanner } from '../components/NotificationBanner.jsx';
 import { NewTask, TaskRow } from '../components/TaskRow.jsx';
-import { Check, LoadError, Loading, Progress } from '../components/ui.jsx';
+import { Check, LoadError, Loading, PageHeader, Progress } from '../components/ui.jsx';
 import { addDays, clockIST, dayLabel, fullDate, weekdayName } from '../dates.js';
 import { attempt, useLoad, useNow } from '../hooks.js';
 
@@ -120,21 +120,24 @@ export function Today() {
 
   if (!data) return error ? <LoadError error={error} retry={reload} /> : <Loading />;
 
-  const openCount = data.tasks.filter((t) => t.status === 'open').length + data.goalTasksDue.length;
+  // Today's progress: ticked tasks out of everything on today's list (dated goal tasks count as not done yet).
+  const doneCount = data.tasks.filter((t) => t.status === 'done').length;
+  const total = data.tasks.length + data.goalTasksDue.length;
   const activeProjects = data.projects.filter((p) => !p.done);
 
   return (
     <>
-      <div class="title-row">
-        <h1 class="page-title">{weekdayName(data.day)}</h1>
-        <span class="clock" aria-label="Time now">
-          {clockIST(now)}
-        </span>
-      </div>
-      <p class="page-sub">
-        {fullDate(data.day)} · {openCount === 0 ? 'All done' : `${openCount} task${openCount === 1 ? '' : 's'} to do`}
-        {loading && ' · updating…'}
-      </p>
+      <PageHeader
+        title={weekdayName(data.day)}
+        aside={
+          <span class="clock" aria-label="Time now">
+            {clockIST(now)}
+          </span>
+        }
+        sub={`${fullDate(data.day)} · ${total === 0 ? 'nothing planned yet' : `${doneCount} of ${total} done`}${loading ? ' · updating…' : ''}`}
+      >
+        {total > 0 && <Progress value={Math.floor((doneCount / total) * 100)} label="Today's progress" />}
+      </PageHeader>
 
       <NotificationBanner />
 

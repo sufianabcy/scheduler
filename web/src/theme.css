@@ -25,7 +25,6 @@
   --gold: #d9b36c; /* title gold, 10:1 on bg */
   --eye: #eaf6ff; /* "lens" white: focus ring */
   --eye-glow: rgba(150, 210, 255, 0.45);
-  --ember: rgba(255, 140, 50, 0.55);
 
   --blue: #3b6cff;
   --blue-soft: rgba(59, 108, 255, 0.18);
@@ -35,7 +34,7 @@
   --p2: #f5a524;
   --p3: #5b8cff;
 
-  --web-line: rgba(255, 255, 255, 0.045);
+  --web-line: rgba(255, 255, 255, 0.035);
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
@@ -59,7 +58,6 @@
   --gold: #8a6418; /* darker gold so titles stay readable (4.9:1) */
   --eye: #1d4ed8; /* focus ring is blue on paper, not white */
   --eye-glow: rgba(29, 78, 216, 0.25);
-  --ember: transparent; /* no embers on paper */
 
   --blue: #1f4fd6;
   --blue-soft: rgba(31, 79, 214, 0.1);

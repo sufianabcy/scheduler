@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { del, get, patch, post, put } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
-import { AddRow, Check, InlineEdit, LoadError, Loading, MoveButtons, Progress, moved } from '../components/ui.jsx';
+import { AddRow, Check, InlineEdit, LoadError, Loading, MoveButtons, PageHeader, Progress, moved } from '../components/ui.jsx';
 import { addMonths, dayLabel, monthLabel, todayIST } from '../dates.js';
 import { attempt, go, useLoad } from '../hooks.js';
 import { GoalCard } from './Today.jsx';
@@ -66,8 +66,7 @@ export function GoalList({ month: requested }) {
 
   return (
     <>
-      <h1 class="page-title">Monthly goals</h1>
-      <p class="page-sub">Each goal's tasks open one at a time. Unfinished goals move to next month.</p>
+      <PageHeader title="Monthly goals" sub="Each goal's tasks open one at a time. Unfinished goals move to next month." />
 
       <div class="switcher">
         <button type="button" class="icon-btn" aria-label="Previous month" onClick={() => go(`/goals/m/${addMonths(month, -1)}`)}>
@@ -176,14 +175,12 @@ export function GoalDetail({ id }) {
       <a class="btn btn-ghost btn-small" href="#/goals" style={{ paddingLeft: 0 }}>
         <Icon name="left" size={16} /> Goals
       </a>
-      <h1 class="page-title">
-        <InlineEdit value={goal.title} label="goal title" onSave={(title) => apply(patch(base, { title }))} />
-      </h1>
-      <p class="page-sub">
-        {monthLabel(goal.month)}
-        {goal.carriedFrom && ` · carried over from ${monthLabel(goal.carriedFrom)}`} · {goal.tasksDone} of {goal.tasksTotal} done
-      </p>
-      <Progress value={goal.progress} label="Goal progress" />
+      <PageHeader
+        title={<InlineEdit value={goal.title} label="goal title" onSave={(title) => apply(patch(base, { title }))} />}
+        sub={`${monthLabel(goal.month)}${goal.carriedFrom ? ` · carried over from ${monthLabel(goal.carriedFrom)}` : ''} · ${goal.tasksDone} of ${goal.tasksTotal} done`}
+      >
+        <Progress value={goal.progress} label="Goal progress" />
+      </PageHeader>
 
       <div class="card section">
         <ul class="list">

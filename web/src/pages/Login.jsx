@@ -27,7 +27,7 @@ export function Login({ onLogin }) {
   return (
     <div class="login">
       <form class="card" onSubmit={submit}>
-        <img class="login-logo" src="/icons/icon-192.png" alt="" />
+        <div class="login-hero" aria-hidden="true" />
         <h1>Spidey Planner</h1>
         <p>Log in to plan your day.</p>
         {error && (

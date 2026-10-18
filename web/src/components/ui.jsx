@@ -167,3 +167,24 @@ export function LoadError({ error, retry }) {
     </div>
   );
 }
+
+/**
+ * The poster-style band at the top of each page: title and details on the left, Spider-Man on the right
+ * (a CSS background image, loaded once and cached). `aside` sits beside the title (e.g. the clock);
+ * `children` go under the details (e.g. a progress bar).
+ */
+export function PageHeader({ title, sub, aside, children }) {
+  return (
+    <header class="hero">
+      <div class="hero-art" aria-hidden="true" />
+      <div class="hero-text">
+        <div class="hero-top">
+          <h1 class="page-title">{title}</h1>
+          {aside}
+        </div>
+        {sub && <p class="page-sub">{sub}</p>}
+        {children}
+      </div>
+    </header>
+  );
+}

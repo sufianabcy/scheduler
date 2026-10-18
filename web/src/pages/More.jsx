@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { del, get, patch, post } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
 import { PriorityPicker, ReminderPicker, RepeatPicker } from '../components/TaskOptions.jsx';
-import { LoadError, Loading } from '../components/ui.jsx';
+import { LoadError, Loading, PageHeader } from '../components/ui.jsx';
 import { formatTime } from '../dates.js';
 import { attempt, useLoad } from '../hooks.js';
 import { diagnose, disablePush, enablePush, ensurePush, onPushChange, pushProblem, pushState } from '../push.js';
@@ -300,8 +300,7 @@ export function More({ user, onLogout }) {
 
   return (
     <>
-      <h1 class="page-title">More</h1>
-      <p class="page-sub">Logged in as {user.email}</p>
+      <PageHeader title="More" sub={`Logged in as ${user.email}`} />
 
       <section class="section">
         <h2 class="section-title" style={{ marginBottom: '10px' }}>
