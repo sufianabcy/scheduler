@@ -32,6 +32,29 @@ body::before {
   mask: radial-gradient(circle, #000 0 55%, transparent 70%);
 }
 
+/* A few still embers and a faint red glow at the top, like the poster. Fixed and never animated, so the
+   browser paints it once and only composites it while scrolling. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%, var(--ember), transparent 100%),
+    radial-gradient(2px 2px at 78% 12%, var(--ember), transparent 100%),
+    radial-gradient(1.5px 1.5px at 88% 46%, var(--ember), transparent 100%),
+    radial-gradient(1px 1px at 22% 64%, var(--ember), transparent 100%),
+    radial-gradient(2px 2px at 64% 82%, var(--ember), transparent 100%),
+    radial-gradient(1px 1px at 40% 36%, var(--ember), transparent 100%),
+    radial-gradient(60% 40% at 50% -10%, rgba(216, 38, 44, 0.08), transparent 70%);
+}
+
+/* No embers or glow on the light "paper" theme. */
+:root[data-theme='light'] body::after {
+  display: none;
+}
+
 button,
 input,
 select,
@@ -69,7 +92,7 @@ a {
   height: calc(var(--nav-height) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   /* No backdrop-filter: blurring behind a fixed bar costs a full repaint per scroll frame on phones. */
-  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  background: var(--surface); /* solid: page text showed through at 97% */
   border-top: 1px solid var(--border);
 }
 
@@ -867,6 +890,8 @@ a {
 /* ---------- Login ---------- */
 
 .login {
+  position: relative;
+  z-index: 1; /* above the fixed web and ember layers */
   display: grid;
   place-items: center;
   min-height: 100dvh;
