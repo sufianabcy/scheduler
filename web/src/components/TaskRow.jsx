@@ -238,7 +238,7 @@ export function NewTask({ day, placeholder, onAdded }) {
         >
           <Icon name="bell" size={18} />
         </button>
-        <button class="btn btn-primary btn-small" type="submit" disabled={!title.trim() || busy} aria-label="Add">
+        <button class="btn btn-primary btn-round" type="submit" disabled={!title.trim() || busy} aria-label="Add">
           <Icon name="plus" size={18} />
         </button>
       </div>

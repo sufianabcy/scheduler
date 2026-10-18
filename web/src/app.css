@@ -87,7 +87,7 @@ a {
 }
 
 .nav a[aria-current='page'] {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .brand {
@@ -152,10 +152,27 @@ a {
 
 .page-title {
   margin: 4px 0 2px;
-  font-family: var(--font-display);
   font-size: 28px;
+}
+
+/* Editable titles (goal and project names) are buttons, which don't inherit text styling by default. */
+.page-title .title-button {
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+/* Poster-style titles: gold, condensed, uppercase (text-transform only, so screen readers read normal words). */
+.page-title,
+.brand,
+.login h1 {
+  font-family: var(--font-display);
+  text-transform: var(--display-case);
+  letter-spacing: var(--display-tracking);
+  color: var(--gold);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  font-stretch: condensed;
 }
 
 .title-row {
@@ -170,8 +187,9 @@ a {
   font-size: 22px;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
-  color: var(--red);
+  color: var(--red-text);
   white-space: nowrap;
+  text-shadow: 0 0 12px var(--red-soft); /* the lit "lens" of the clock; static */
 }
 
 .page-sub {
@@ -184,11 +202,25 @@ a {
 }
 
 .section-head {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
+  padding-bottom: 8px;
+}
+
+/* Thin red hairline, like the poster's dividers. */
+.section-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--red-line), transparent 75%);
+  pointer-events: none;
 }
 
 .section-title {
@@ -215,6 +247,11 @@ a {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+}
+
+/* Faint top light on cards in the dark theme; a static gradient painted once. */
+:root:not([data-theme='light']) .card {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 40%);
 }
 
 .card-pad {
@@ -348,6 +385,21 @@ a {
   cursor: default;
 }
 
+.btn-primary.btn-round {
+  flex: none;
+  align-self: center; /* rows stretch their children; keep this a circle */
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--red-soft), 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.btn-primary.btn-round:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
 .btn-row {
   display: flex;
   flex-wrap: wrap;
@@ -355,8 +407,9 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--eye);
   outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--eye-glow); /* static, never animated */
 }
 
 /* ---------- Checkbox with the web-shot ---------- */
@@ -436,7 +489,7 @@ a {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--red), var(--blue));
+  background: linear-gradient(90deg, var(--red), var(--gold));
   transition: width 0.4s ease;
 }
 
@@ -540,7 +593,7 @@ a {
 
 .badge-red {
   background: var(--red-soft);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .badge-blue {
@@ -569,7 +622,6 @@ a {
 .input:focus,
 .textarea:focus,
 .select:focus {
-  outline: none;
   border-color: var(--blue);
 }
 
@@ -745,11 +797,11 @@ a {
 }
 
 .banner > svg {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .icon-btn.is-set {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 /* ---------- Toolbar (day and month switchers) ---------- */

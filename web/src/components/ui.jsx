@@ -119,7 +119,7 @@ export function AddRow({ placeholder, onAdd, extra }) {
         onInput={(e) => setText(e.currentTarget.value)}
       />
       {extra}
-      <button class="btn btn-primary btn-small" type="submit" disabled={!text.trim() || busy} aria-label="Add">
+      <button class="btn btn-primary btn-round" type="submit" disabled={!text.trim() || busy} aria-label="Add">
         <Icon name="plus" size={18} />
       </button>
     </form>
