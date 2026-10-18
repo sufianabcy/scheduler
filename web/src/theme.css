@@ -1,62 +1,87 @@
 /*
- * Theme tokens. Every colour, font and radius the app uses comes from here, so the Spider-Man design pass
- * (step 7) only needs to change this file. Dark is the default; [data-theme="light"] switches.
+ * Theme tokens. Every colour, font and radius the app uses comes from here. Dark is the default;
+ * [data-theme="light"] switches. The look follows a Spider-Man night poster: near-black navy, suit red,
+ * gold condensed titles, white "lens" glow for focus, a few still embers. Contrast ratios are WCAG-checked;
+ * keep them if you change values.
  */
 
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0b0d1a;
-  --surface: #141a2e;
-  --surface-2: #1c2340;
-  --border: #2a3358;
-  --text: #eef1ff;
-  --muted: #9aa3c7;
-  --faint: #5d6690;
+  --bg: #080a12; /* poster night */
+  --surface: #10141f;
+  --surface-2: #171c2b;
+  --border: #262c40;
+  --text: #f2f3f7; /* 16.6:1 on surface */
+  --muted: #9ea5bb; /* 7.5:1 on surface */
+  --faint: #6b7290; /* 3.9:1, only for non-essential text and icons */
 
-  --red: #e23636;
-  --red-strong: #ff4b4b;
-  --red-soft: rgba(226, 54, 54, 0.16);
+  --red: #d8262c; /* fills; white text on it is 5.0:1 */
+  --red-strong: #b91c22; /* hover: darker so white text keeps its contrast */
+  --red-text: #ff5c5c; /* red used as text on dark (6.1:1) */
+  --red-soft: rgba(216, 38, 44, 0.16);
+  --red-line: rgba(216, 38, 44, 0.7); /* divider hairlines */
+
+  --gold: #d9b36c; /* title gold, 10:1 on bg */
+  --eye: #eaf6ff; /* "lens" white: focus ring */
+  --eye-glow: rgba(150, 210, 255, 0.45);
+  --ember: rgba(255, 140, 50, 0.55);
+
   --blue: #3b6cff;
   --blue-soft: rgba(59, 108, 255, 0.18);
   --done: #3b6cff;
   --danger: #ff6b6b;
-  --p1: #ff4b4b;
+  --p1: #ff5c5c;
   --p2: #f5a524;
   --p3: #5b8cff;
 
-  --web-line: rgba(255, 255, 255, 0.05);
-  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --web-line: rgba(255, 255, 255, 0.045);
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
+/* "Daily paper" version of the same theme. */
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f5f6fb;
+  --bg: #f6f4ef;
   --surface: #ffffff;
-  --surface-2: #eef1f8;
-  --border: #d8ddeb;
-  --text: #11142a;
-  --muted: #586086;
-  --faint: #9aa1bf;
+  --surface-2: #efece4;
+  --border: #ddd7ca;
+  --text: #12141c; /* 18:1 */
+  --muted: #555b6e; /* 6.2:1 on bg */
+  --faint: #8a8fa0;
 
-  --red: #d22a2a;
-  --red-strong: #b81d1d;
-  --red-soft: rgba(210, 42, 42, 0.1);
+  --red: #c81e24; /* white on it is 5.7:1; as text on bg 5.2:1 */
+  --red-strong: #a8171c;
+  --red-text: #c81e24;
+  --red-soft: rgba(200, 30, 36, 0.1);
+  --red-line: rgba(200, 30, 36, 0.55);
+
+  --gold: #8a6418; /* darker gold so titles stay readable (4.9:1) */
+  --eye: #1d4ed8; /* focus ring is blue on paper, not white */
+  --eye-glow: rgba(29, 78, 216, 0.25);
+  --ember: transparent; /* no embers on paper */
+
   --blue: #1f4fd6;
   --blue-soft: rgba(31, 79, 214, 0.1);
   --done: #1f4fd6;
   --danger: #c62828;
-  --p1: #d22a2a;
+  --p1: #c81e24;
   --p2: #c77700;
   --p3: #1f4fd6;
 
   --web-line: rgba(17, 20, 42, 0.06);
-  --shadow: 0 6px 20px rgba(17, 20, 42, 0.08);
+  --shadow: 0 4px 16px rgba(17, 20, 42, 0.08);
 }
 
 :root {
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-display: var(--font);
+  /* Condensed display face for titles. System fonts only, so it costs 0 bytes:
+     Avenir Next Condensed (Mac), Roboto Condensed / sans-serif-condensed (Android), Arial Narrow (Windows).
+     'Spidey Display' is reserved for an optional bundled font later. */
+  --font-display: 'Spidey Display', 'Avenir Next Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif-condensed,
+    var(--font);
+  --display-case: uppercase;
+  --display-tracking: 0.04em;
   --radius: 14px;
   --radius-sm: 9px;
   --nav-height: 64px;

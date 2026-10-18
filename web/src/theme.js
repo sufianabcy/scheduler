@@ -11,7 +11,7 @@ const read = () => {
 
 export function applyTheme(theme = read()) {
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f5f6fb' : '#0b0d1a');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f6f4ef' : '#080a12');
   return theme;
 }
 
