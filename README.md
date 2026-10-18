@@ -13,7 +13,7 @@ See [SPEC.md](SPEC.md) for what it does and how it's built.
 | 4    | Screens and app install                           | Done    |
 | 5    | Push notifications                                | Done    |
 | 6    | AWS, HTTPS, backups, auto-deploy                  | Next    |
-| 7    | Spider-Man design pass                            | To do   |
+| 7    | Spider-Man design pass                            | Done (two rounds) |
 
 ## Run it locally
 
@@ -83,10 +83,18 @@ The web tests cover quick add (`web/src/quickadd.js`).
 | Projects | `#/projects`, `#/projects/<id>` | Steps that unlock one by one, checklists, templates         |
 | More     | `#/more`                  | Repeating tasks, templates, theme, log out                        |
 
-- Colours, fonts and sizes live in `web/src/theme.css`, so the Spider-Man design pass only changes that file.
+- Look: Spider-Man night poster. Colours, fonts, the type scale and sizes are tokens in `web/src/theme.css`;
+  every text rule in `web/src/app.css` is one of four roles (Display, Label, Body, Meta).
+- Fonts: Barlow and Barlow Condensed, self-hosted in `web/src/assets/fonts/` (SIL OFL, see `OFL.txt`), trimmed to
+  Basic Latin plus the punctuation the app uses.
+- Every page opens with a poster header band (`PageHeader` in `web/src/components/ui.jsx`) using the two photos in
+  `web/src/assets/hero/`. Today is two columns from 1000px wide.
+- Production build, gzipped: JS 22.3 KB, CSS 4.8 KB. Fonts 31.8 KB and header images 35.1 KB, cached by the
+  service worker after the first load. No idle animations, no new dependencies. Lighthouse not measured yet.
 - `web/public/sw.js` makes the app installable and lets it open offline with the last data it loaded. Changes
   need the network. Logging out deletes the saved data.
-- App icons are drawn by `web/scripts/make_icons.py` (`npm --prefix web run icons`, needs Pillow).
+- App icons (red mask with lens eyes) are drawn by `web/scripts/make_icons.py` (`npm --prefix web run icons`, needs
+  Pillow). After changing them, bump `SHELL` in `web/public/sw.js`.
 
 ## API so far
 
