@@ -5,6 +5,7 @@ import { Loading } from './components/ui.jsx';
 import { useOnline, useRoute } from './hooks.js';
 import { GoalDetail, GoalList } from './pages/Goals.jsx';
 import { Login } from './pages/Login.jsx';
+import { MailAccounts, MailDetail, MailList } from './pages/Mail.jsx';
 import { More } from './pages/More.jsx';
 import { Plan } from './pages/Plan.jsx';
 import { ProjectDetail, ProjectList } from './pages/Projects.jsx';
@@ -17,12 +18,13 @@ const NAV = [
   { path: '/plan', section: 'plan', label: 'Plan', icon: 'calendar' },
   { path: '/goals', section: 'goals', label: 'Goals', icon: 'target' },
   { path: '/projects', section: 'projects', label: 'Projects', icon: 'steps' },
+  { path: '/mail', section: 'mail', label: 'Mail', icon: 'mail' },
   { path: '/more', section: 'more', label: 'More', icon: 'more' },
 ];
 
-/** Picks the page for a hash route like '/goals/12'. */
+/** Picks the page for a hash route like '/goals/12' (anything after '?' is for the page itself). */
 function page(route, user, onLogout) {
-  const [section, a, b] = route.split('/').filter(Boolean);
+  const [section, a, b] = route.split('?')[0].split('/').filter(Boolean);
   switch (section) {
     case undefined:
       return <Today />;
@@ -33,6 +35,10 @@ function page(route, user, onLogout) {
       return a ? <GoalDetail id={a} /> : <GoalList />;
     case 'projects':
       return a ? <ProjectDetail id={a} /> : <ProjectList />;
+    case 'mail':
+      if (a === 'accounts') return <MailAccounts />;
+      if (a === 'starred') return <MailList view="starred" />;
+      return a ? <MailDetail id={a} /> : <MailList />;
     case 'more':
       return <More user={user} onLogout={onLogout} />;
     default:
@@ -113,7 +119,7 @@ export function App() {
   }
   if (user === null) return <Login onLogin={setUser} />;
 
-  const section = route.split('/').filter(Boolean)[0] ?? '';
+  const section = route.split('?')[0].split('/').filter(Boolean)[0] ?? '';
   return (
     <div class="shell">
       <nav class="nav" aria-label="Main">

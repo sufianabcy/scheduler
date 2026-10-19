@@ -30,6 +30,8 @@ const taskJson = (t) => ({
       : null,
   remindAt: t.remind_at,
   priority: t.priority,
+  // A task made from a mail: messageId while the mail is still synced, link to open it at Gmail/Outlook.
+  mail: t.mail_message_id !== null || t.mail_link !== null ? { messageId: t.mail_message_id, link: t.mail_link } : null,
   doneAt: t.done_at,
 });
 
@@ -75,8 +77,8 @@ export function createDaily(db) {
     dayTasks: db.prepare(`${TASK_WITH_RULE} WHERE t.user_id = ? AND t.day = ? AND t.status != 'unfinished' ORDER BY ${BY_PRIORITY}, t.position, t.id`),
     unfinished: db.prepare(`${TASK_WITH_RULE} WHERE t.user_id = ? AND t.status = 'unfinished' ORDER BY ${BY_PRIORITY}, t.day, t.position, t.id`),
     insertTask: db.prepare(`
-      INSERT INTO daily_tasks (user_id, title, day, remind_at, priority, position)
-      VALUES (?, ?, ?, ?, ?, (SELECT coalesce(max(position), -1) + 1 FROM daily_tasks WHERE user_id = ? AND day = ?))`),
+      INSERT INTO daily_tasks (user_id, title, day, remind_at, priority, mail_message_id, mail_link, position)
+      VALUES (?, ?, ?, ?, ?, ?, ?, (SELECT coalesce(max(position), -1) + 1 FROM daily_tasks WHERE user_id = ? AND day = ?))`),
     rename: db.prepare('UPDATE daily_tasks SET title = ? WHERE id = ?'),
     setStatus: db.prepare(`
       UPDATE daily_tasks
@@ -164,10 +166,11 @@ export function createDaily(db) {
 
     /**
      * Adds a task to a day. With `repeat`, it becomes the first of a repeating series starting that day.
+     * `mail` ({ messageId, link }) links a one-off task to the mail it was made from.
      * Returns { tasks, firstDay }: firstDay is when the series first happens (the same day unless the chosen
      * weekdays skip it).
      */
-    addTask(userId, day, { title, repeat = null, remindAt = null, priority = null }, today) {
+    addTask(userId, day, { title, repeat = null, remindAt = null, priority = null, mail = null }, today) {
       noPastDay(day, today);
       let firstDay = day;
       transaction(db, () => {
@@ -176,7 +179,7 @@ export function createDaily(db) {
           firstDay = nextOccurrence(rule, day);
           generate(userId, day);
         } else {
-          q.insertTask.run(userId, title, day, remindAt, priority, userId, day);
+          q.insertTask.run(userId, title, day, remindAt, priority, mail?.messageId ?? null, mail?.link ?? null, userId, day);
         }
       });
       return { tasks: dayTasks(userId, day, today), firstDay };

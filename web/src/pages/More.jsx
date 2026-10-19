@@ -311,6 +311,23 @@ export function More({ user, onLogout }) {
 
       <section class="section card">
         <div class="section-head">
+          <h2 class="section-title">Mail accounts</h2>
+        </div>
+        <ul class="list">
+          <li class="row">
+            <div class="row-main">
+              <div>Gmail and Outlook</div>
+              <div class="row-meta">Connect, reconnect or disconnect the accounts shown in Mail.</div>
+            </div>
+            <a class="btn btn-small" href="#/mail/accounts">
+              <Icon name="mail" size={16} /> Manage
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section card">
+        <div class="section-head">
           <h2 class="section-title">Repeating tasks</h2>
         </div>
         <Repeating />

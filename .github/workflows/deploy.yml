@@ -2,7 +2,7 @@
 # version to the server and switch to it. If the new version doesn't start, the server keeps the previous one.
 #
 # Secrets (repository → Settings → Secrets and variables → Actions), see DEPLOY.md:
-#   DEPLOY_HOST         the server's address, e.g. planner.duckdns.org
+#   DEPLOY_HOST         the server's address, e.g. sufian-planner.duckdns.org
 #   DEPLOY_SSH_KEY      the private deploy key (contents of ~/.ssh/planner_deploy)
 #   DEPLOY_KNOWN_HOSTS  the line printed at the end of deploy/setup-server.sh
 # Without DEPLOY_HOST the workflow only tests and builds.

@@ -34,6 +34,13 @@
   --p1: #ff5c5c;
   --p2: #f5a524;
   --p3: #5b8cff;
+  /* Mail account colours (the dot next to each mail), in the order accounts are connected. */
+  --mail-1: #ff5c5c;
+  --mail-2: #5b8cff;
+  --mail-3: #d9b36c;
+  --mail-4: #3ccf91;
+  --mail-5: #c084fc;
+  --mail-6: #f5a524;
 
   --web-line: rgba(255, 255, 255, 0.035);
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
@@ -68,6 +75,12 @@
   --p1: #c81e24;
   --p2: #c77700;
   --p3: #1f4fd6;
+  --mail-1: #c81e24;
+  --mail-2: #1f4fd6;
+  --mail-3: #8a6418;
+  --mail-4: #0f8a5f;
+  --mail-5: #7c3aed;
+  --mail-6: #c77700;
 
   --web-line: rgba(17, 20, 42, 0.06);
   --shadow: 0 4px 16px rgba(17, 20, 42, 0.08);

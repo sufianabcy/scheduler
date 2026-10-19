@@ -15,4 +15,12 @@ export const config = {
   // Contact for the push services (required by the Web Push standard): a mailto: or https: URL.
   vapidSubject: process.env.VAPID_SUBJECT ?? 'mailto:planner@example.com',
   sessionDays: 30,
+  // Mail (Gmail and Outlook). Switched off until MAIL_TOKEN_KEY is set; each provider until its ID and secret are set.
+  mail: {
+    tokenKey: process.env.MAIL_TOKEN_KEY,
+    // The address people open the app at; the providers send the browser back to <publicUrl>/api/mail/callback/...
+    publicUrl: (process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3000}`).replace(/\/$/, ''),
+    google: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET },
+    microsoft: { clientId: process.env.MS_CLIENT_ID, clientSecret: process.env.MS_CLIENT_SECRET },
+  },
 };

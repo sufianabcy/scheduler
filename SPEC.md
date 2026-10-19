@@ -115,7 +115,7 @@ Before that ends it must be upgraded to the Paid plan, or AWS pauses the account
 
 - **Server:** EC2 `t4g.micro` (ARM, 1 GB RAM) with Ubuntu 24.04 in Mumbai, a 10 GB disk and a fixed (Elastic) IP.
   The app uses about 85 MB of RAM.
-- **Address:** `planner.duckdns.org` (free DuckDNS name; another name if that one is taken).
+- **Address:** `sufian-planner.duckdns.org` (free DuckDNS name).
 - **HTTPS:** Caddy, with a free Let's Encrypt certificate that renews itself.
 - **Backups:** nightly at 03:30 IST; 7 days on the server, 30 days in S3.
 - **Deploys:** every push to `main` runs the tests in GitHub Actions, uploads the build and switches to it. If the new

@@ -22,6 +22,11 @@ const PATHS = {
   template: 'M4 4h16v6H4zM4 14h7v6H4zM15 14h5v6h-5z',
   bell: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',
   flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
+  mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
+  star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z',
+  external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+  refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
+  image: 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01',
 };
 
 export function Icon({ name, size = 20, ...rest }) {

@@ -2,7 +2,7 @@
 # One-time setup of a fresh Ubuntu 24.04 server for Spidey Planner. Safe to run again.
 #
 # Usage (on the server, as the default "ubuntu" user):
-#   sudo DOMAIN=planner.duckdns.org EMAIL=you@example.com BACKUP_BUCKET=my-bucket bash setup-server.sh planner_deploy.pub
+#   sudo DOMAIN=sufian-planner.duckdns.org EMAIL=you@example.com BACKUP_BUCKET=my-bucket bash setup-server.sh planner_deploy.pub
 #
 #   DOMAIN         the web address that points at this server (needed for the HTTPS certificate)
 #   EMAIL          your email: for Let's Encrypt certificate notices and as the push notification contact
@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-DOMAIN="${DOMAIN:?Set DOMAIN, e.g. DOMAIN=planner.duckdns.org}"
+DOMAIN="${DOMAIN:?Set DOMAIN, e.g. DOMAIN=sufian-planner.duckdns.org}"
 EMAIL="${EMAIL:?Set EMAIL, e.g. EMAIL=you@example.com}"
 BACKUP_BUCKET="${BACKUP_BUCKET:-}"
 DEPLOY_KEY_FILE="${1:?Pass the deploy public key file, e.g. planner_deploy.pub}"
@@ -99,6 +99,13 @@ COOKIE_SECURE=true
 TRUST_PROXY=true
 VAPID_SUBJECT=mailto:${EMAIL}
 BACKUP_BUCKET=${BACKUP_BUCKET}
+PUBLIC_URL=https://${DOMAIN}
+# Mail (Gmail and Outlook): see "Mail setup" in DEPLOY.md.
+MAIL_TOKEN_KEY=$(openssl rand -base64 32)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+MS_CLIENT_ID=
+MS_CLIENT_SECRET=
 EOF
   chown root:planner /etc/planner.env
   chmod 640 /etc/planner.env

@@ -17,7 +17,7 @@ const TASK_GRACE_MINUTES = 15;
  * Each goes out once. If the server was down at the time, it still goes out a little later (see the grace
  * minutes above, never past midnight), but not hours late.
  */
-export function createNotifier(db, { push, now = () => new Date() }) {
+export function createNotifier(db, { push, mail = null, now = () => new Date() }) {
   const daily = createDaily(db);
   const goals = createGoals(db);
   const settings = createSettings(db);
@@ -65,6 +65,8 @@ export function createNotifier(db, { push, now = () => new Date() }) {
       lines.push('Open the app to plan your day.');
     }
     if (unfinished > 0) lines.push(`${unfinished} unfinished from earlier days`);
+    const starred = mail?.starredCount(userId) ?? 0;
+    if (starred > 0) lines.push(`${starred} starred mail${starred > 1 ? 's' : ''} waiting`);
 
     return {
       title: titles.length === 0 ? 'Nothing planned for today' : `Today: ${titles.length} task${titles.length > 1 ? 's' : ''}`,

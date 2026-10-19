@@ -14,6 +14,7 @@ See [SPEC.md](SPEC.md) for what it does and how it's built.
 | 5    | Push notifications                                | Done    |
 | 6    | AWS, HTTPS, backups, auto-deploy                  | Ready to set up: see [DEPLOY.md](DEPLOY.md) |
 | 7    | Spider-Man design pass                            | Done (two rounds) |
+| 8    | Mail: Gmail and Outlook                           | Built; needs the Google/Microsoft setup in [DEPLOY.md](DEPLOY.md#mail-setup-gmail-and-outlook) |
 
 ## Run it locally
 
@@ -253,3 +254,36 @@ from the banner on Today, or when you switch on a reminder. More → Notificatio
 Chrome only allows notifications on https:// addresses and on localhost. Opening the app on a phone over Wi-Fi
 (http://192.168…) can't show notifications until it's online with https (step 6). For testing before that, add the
 address in the phone's chrome://flags → "Insecure origins treated as secure".
+
+### Mail
+
+Gmail and Outlook accounts in one inbox, through Google's and Microsoft's own sign-in (OAuth with PKCE); the app
+never sees passwords. Code: `server/src/mail/` (`gmail.js` and `graph.js` are two adapters with the same functions).
+
+- **Synced:** inbox mail from the last 30 days, at most 500 per account, every 5 minutes. Only sender, subject,
+  preview, date and read/starred are stored. Gmail is asked only for what changed (`historyId`), Outlook through a
+  delta link. Starred mail is kept past 30 days.
+- **Never stored:** mail bodies. They're fetched when you open a mail and shown in a sandboxed frame with its own
+  strict CSP: no scripts, no forms, and no remote images until you tap "Show images".
+- **Secrets:** refresh tokens are encrypted (AES-256-GCM) with `MAIL_TOKEN_KEY`, which lives in the environment and
+  never in the database. Access tokens stay in memory. Logs carry only the account id and error code.
+- **Permissions asked for:** Gmail `gmail.modify` (read and star); Microsoft `offline_access User.Read Mail.ReadWrite`
+  (read and flag). Nothing that sends mail.
+- **Switched off** until `MAIL_TOKEN_KEY` is set, and each provider until its client ID and secret are set.
+
+| Method | Path                                  | Body / notes                                                        |
+|--------|---------------------------------------|---------------------------------------------------------------------|
+| GET    | `/api/mail/status`                    | Whether Mail and each provider are set up                           |
+| GET    | `/api/mail/connect/:provider`         | Page load: sends the browser to Google (`google`) or Microsoft (`microsoft`) |
+| GET    | `/api/mail/callback/:provider`        | Where the provider sends the browser back; then to `#/mail/accounts` |
+| GET    | `/api/mail/accounts`                  | Accounts with status, last sync, unread and starred counts          |
+| DELETE | `/api/mail/accounts/:id`              | Revokes access (Google), deletes the account and its synced mail    |
+| POST   | `/api/mail/sync`                      | Sync now                                                            |
+| GET    | `/api/mail/messages`                  | `?view=inbox\|starred&account=<id>&before=<receivedAt>`, 50 at a time |
+| GET    | `/api/mail/messages/:id`              | One mail's details                                                  |
+| GET    | `/api/mail/messages/:id/body`         | The body as a sandboxed page (`?images=1` allows remote images)     |
+| POST   | `/api/mail/messages/:id/star`         | `{ starred }`; stars in Gmail or flags in Outlook                   |
+| POST   | `/api/mail/messages/:id/task`         | `{ title?, day?, priority? }`; a task linked to the mail            |
+
+Tests use stand-in Google and Microsoft servers (`server/test/fake-mail-providers.js`), so they run without real
+accounts.

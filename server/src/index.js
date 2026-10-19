@@ -2,13 +2,15 @@ import { createApp } from './app.js';
 import { config } from './config.js';
 import { openDb } from './db.js';
 import { createJobs } from './jobs.js';
+import { createMail } from './mail/index.js';
 import { createNotifier } from './notifications.js';
 import { createPush, loadVapidKeys } from './push.js';
 
 const db = openDb(config.dbPath);
 const push = createPush(db, { vapid: loadVapidKeys(db), subject: config.vapidSubject });
-const jobs = createJobs(db, { notifier: createNotifier(db, { push }) });
-const app = createApp({ db, config, jobs, push });
+const mail = createMail(db, { config });
+const jobs = createJobs(db, { notifier: createNotifier(db, { push, mail }), mail });
+const app = createApp({ db, config, jobs, push, mail });
 const stopJobs = jobs.start();
 
 const server = app.listen(config.port, config.host, () => {

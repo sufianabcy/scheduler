@@ -26,6 +26,15 @@ function TaskMeta({ task, extra }) {
       </span>,
     );
   }
+  if (task.mail) {
+    // Open the synced copy in the app while it's there; after that, the mail at Gmail/Outlook.
+    const internal = task.mail.messageId !== null;
+    parts.push(
+      <a key="m" href={internal ? `#/mail/${task.mail.messageId}` : task.mail.link} {...(!internal && { target: '_blank', rel: 'noopener noreferrer' })}>
+        <Icon name="mail" size={13} /> Open mail
+      </a>,
+    );
+  }
   if (extra) parts.push(<span key="x">{extra}</span>);
   if (parts.length === 0) return null;
   return <div class="row-meta meta-line">{parts}</div>;

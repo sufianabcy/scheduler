@@ -5,7 +5,7 @@
 // - Other files (scripts, styles, icons): saved on first use. Built file names change with every build.
 // Bump SHELL when this file's caching rules change, to drop the old caches.
 
-const SHELL = 'shell-v2';
+const SHELL = 'shell-v3';
 const API = 'api';
 // Registered as /sw.js?dev by the development server: notifications only, no caching.
 const DEV = new URL(self.location.href).searchParams.has('dev');
@@ -36,6 +36,10 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
   if (DEV || request.method !== 'GET' || url.origin !== self.location.origin) return;
+
+  // Connecting a mail account is a full-page trip to Google or Microsoft, and mail bodies are never saved on the
+  // device: let both go straight to the network.
+  if (/^\/api\/mail\/(connect|callback)\/|^\/api\/mail\/messages\/\d+\/body/.test(url.pathname)) return;
 
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request, API));

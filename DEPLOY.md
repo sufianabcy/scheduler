@@ -1,24 +1,24 @@
 # Deploying Spidey Planner to AWS
 
+The same guide as a doc you can open on your phone:
+https://claude.ai/code/artifact/a6d64265-f475-46dc-9469-6b388ca57d69
+
 You do these steps yourself. They take about 45 minutes, once. After that, every push to `main` deploys
 automatically.
 
 **What you end up with**
 
 - One small ARM server (EC2 `t4g.micro`, 1 GB RAM) in Mumbai, running the app.
-- `https://planner.duckdns.org` with a free certificate that renews itself.
+- `https://sufian-planner.duckdns.org` with a free certificate that renews itself.
 - A nightly database backup on the server (7 days) and in S3 (30 days).
 - GitHub Actions: on every push to `main` it runs the tests, builds, uploads and switches to the new version. If the
   new version doesn't start, the server keeps the old one.
-
-> **About the name:** `planner.duckdns.org` is a short name and may already be taken on DuckDNS. If it is, pick
-> another (for example `sufian-planner`) and use that name everywhere this guide says `planner.duckdns.org`.
 
 Values used below. Write yours down as you create them:
 
 | What                        | Example in this guide             | Yours |
 |-----------------------------|-----------------------------------|-------|
-| Web address                 | `planner.duckdns.org`             |       |
+| Web address                 | `sufian-planner.duckdns.org`      | `sufian-planner.duckdns.org` |
 | Server IP (Elastic IP)      | `13.200.10.20`                    |       |
 | Backup bucket               | `spidey-planner-backups-sufian`   |       |
 | Your email                  | `you@example.com`                 |       |
@@ -40,6 +40,9 @@ Expected cost: about **$10/month** (server ~$6, public IP ~$3.60, disk ~$1). Cre
 ## 2. Create the server (10 min)
 
 All in the AWS console. First, top right, set the region to **Asia Pacific (Mumbai) ap-south-1**.
+
+If the region menu says **Global** and every region has a lock, you're on a page that isn't tied to a region
+(Budgets, Billing, IAM). Type `EC2` in the search bar at the top and open it; the menu then lets you pick Mumbai.
 
 ### 2.1 A key to log in to the server
 
@@ -120,13 +123,13 @@ The server can only add files under `planner/` in that bucket: it can't read, li
 ## 4. The web address (5 min)
 
 1. Go to https://www.duckdns.org and sign in (GitHub or Google).
-2. Under **domains**, type `planner` → **add domain**. (Taken? Pick another name.)
+2. Under **domains**, type `sufian-planner` → **add domain**.
 3. Put your Elastic IP in the **current ip** box next to it → **update ip**.
 
 Check it from your Mac (it can take a minute):
 
 ```bash
-dig +short planner.duckdns.org
+dig +short sufian-planner.duckdns.org
 ```
 
 It should print your Elastic IP.
@@ -159,13 +162,13 @@ ssh -i ~/.ssh/planner-admin.pem ubuntu@13.200.10.20
 skipped step 3). It takes about 5 minutes:
 
 ```bash
-sudo DOMAIN=planner.duckdns.org EMAIL=you@example.com BACKUP_BUCKET=spidey-planner-backups-sufian bash setup-server.sh planner_deploy.pub
+sudo DOMAIN=sufian-planner.duckdns.org EMAIL=you@example.com BACKUP_BUCKET=spidey-planner-backups-sufian bash setup-server.sh planner_deploy.pub
 ```
 
 It ends with a line like this. **Copy it** for the next step:
 
 ```
-planner.duckdns.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
+sufian-planner.duckdns.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
 ```
 
 Stay logged in to the server for step 7.
@@ -177,7 +180,7 @@ GitHub → your repository `sufianabcy/scheduler` → **Settings** → **Secrets
 
 | Name                 | Value                                                                    |
 |----------------------|--------------------------------------------------------------------------|
-| `DEPLOY_HOST`        | `planner.duckdns.org`                                                    |
+| `DEPLOY_HOST`        | `sufian-planner.duckdns.org`                                                    |
 | `DEPLOY_SSH_KEY`     | The whole private key. On your Mac run `pbcopy < ~/.ssh/planner_deploy`, then paste. It starts with `-----BEGIN OPENSSH PRIVATE KEY-----`. |
 | `DEPLOY_KNOWN_HOSTS` | The line you copied at the end of step 5.4                               |
 
@@ -198,12 +201,115 @@ It asks for a password twice (8+ characters). Repeat for the second person if ne
 
 ## 8. Open it and install it
 
-- **Mac:** Chrome → `https://planner.duckdns.org` → log in → menu ⋮ → **Cast, save and share** →
+- **Mac:** Chrome → `https://sufian-planner.duckdns.org` → log in → menu ⋮ → **Cast, save and share** →
   **Install page as app**. It appears in Launchpad and you can keep it in the Dock.
-- **Android:** Chrome → `https://planner.duckdns.org` → log in → menu ⋮ → **Add to Home screen** → **Install**.
+- **Android:** Chrome → `https://sufian-planner.duckdns.org` → log in → menu ⋮ → **Add to Home screen** → **Install**.
 - On each device: **More → Notifications → Turn on**, then **Send a test**.
 
 ---
+
+## Mail setup (Gmail and Outlook)
+
+Mail stays switched off until the server has these settings. It takes about 45 minutes, once: two free app
+registrations (Google and Microsoft, about 20 minutes each) and 5 minutes on the server. Do it after the Mail code
+is deployed (pushed to `main`).
+
+### Google (for every Gmail account)
+
+1. Go to https://console.cloud.google.com and create a project called `Spidey Planner`.
+2. **APIs & Services** → **Library** → search **Gmail API** → **Enable**.
+3. **Google Auth Platform** → **Branding**: app name `Spidey Planner`, your email as support and developer contact
+   → **Save**. **Audience**: user type **External**.
+4. **Data access** → **Add or remove scopes** → paste `https://www.googleapis.com/auth/gmail.modify` →
+   **Add to table** → **Update** → **Save**. (Read and star; it can't send mail.)
+5. **Audience** → **Test users** → **Add users**: every Gmail address you'll connect.
+6. **Clients** → **Create client** → type **Web application**, name `Spidey Planner`. Under
+   **Authorized redirect URIs** add both:
+   - `https://sufian-planner.duckdns.org/api/mail/callback/google`
+   - `http://localhost:3000/api/mail/callback/google` (only for trying it on your Mac)
+
+   → **Create**. Copy the **Client ID** and **Client secret**.
+7. Once connecting works: **Audience** → **Publish app** → **In production**. While it says "Testing", Google ends the
+   connection every 7 days. After publishing, connecting shows "Google hasn't verified this app": click
+   **Advanced** → **Go to Spidey Planner**. That's expected for a personal app.
+
+### Microsoft (Outlook.com, Hotmail and Microsoft 365)
+
+1. Go to https://entra.microsoft.com and sign in with any Microsoft account. **App registrations** →
+   **New registration**:
+   - Name `Spidey Planner`
+   - Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**
+   - Redirect URI: platform **Web**, `https://sufian-planner.duckdns.org/api/mail/callback/microsoft`
+
+   → **Register**. Copy the **Application (client) ID** from the Overview page.
+2. **Authentication** → **Add URI**: `http://localhost:3000/api/mail/callback/microsoft` (only for your Mac) → **Save**.
+3. **Certificates & secrets** → **New client secret** → 24 months → copy the **Value** (not the Secret ID).
+   Add a task in the app for a week before it expires: Outlook stops syncing on that day.
+4. **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated**: `offline_access`, `User.Read`,
+   `Mail.ReadWrite` → **Add permissions**. (Read and flag; it can't send mail.)
+
+A work or school Microsoft 365 account may say "Need admin approval": only its IT team can allow it.
+
+### Put the settings on the server
+
+Log in to the server:
+
+```bash
+ssh -i ~/.ssh/planner-admin.pem ubuntu@sufian-planner.duckdns.org
+```
+
+Add the app's address and a new encryption key (each line only adds what's missing):
+
+```bash
+sudo grep -q '^PUBLIC_URL=' /etc/planner.env || echo "PUBLIC_URL=https://sufian-planner.duckdns.org" | sudo tee -a /etc/planner.env
+```
+
+```bash
+sudo grep -q '^MAIL_TOKEN_KEY=.' /etc/planner.env || echo "MAIL_TOKEN_KEY=$(openssl rand -base64 32)" | sudo tee -a /etc/planner.env >/dev/null
+```
+
+Open the settings file and add (or fill in) these four lines with what you copied:
+
+```bash
+sudo nano /etc/planner.env
+```
+
+```
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+MS_CLIENT_ID=...
+MS_CLIENT_SECRET=...
+```
+
+Save with **Ctrl+O**, **Enter**, then **Ctrl+X**. Restart the app:
+
+```bash
+sudo systemctl restart planner
+```
+
+Keep a copy of the key in your password manager (`sudo grep MAIL_TOKEN_KEY /etc/planner.env`). It isn't in the
+backups on purpose. If it's ever lost, connect the accounts again.
+
+### Connect your accounts
+
+In the app: **Mail** → **Connect Gmail** / **Connect Outlook** (or **More** → **Mail accounts**). You sign in on
+Google's or Microsoft's own page and come back to the app. The first sync takes a few seconds.
+
+### Try it on your Mac first (optional)
+
+Put the same settings in `server/.env` with `PUBLIC_URL=http://localhost:3000`, then
+`npm --prefix web run build && npm --prefix server start`. Open exactly **http://localhost:3000**: Google and
+Microsoft only send you back to that address, and the login cookie for `127.0.0.1` is a different one.
+
+### If connecting doesn't work
+
+| Message                                             | Fix                                                                 |
+|-----------------------------------------------------|---------------------------------------------------------------------|
+| Google: `redirect_uri_mismatch`                     | The redirect URI in step 6 must match exactly, `https` and all     |
+| Microsoft: `AADSTS50011`                            | Same, under Authentication                                          |
+| Google: "Access blocked" / `access_denied`          | Add the address as a test user (Google step 5)                      |
+| "Gmail is not set up on the server yet"             | The client ID or secret is missing in `/etc/planner.env`; restart after adding |
+| An account says "Needs reconnecting"                | Tap **Reconnect** (password changed, access removed, or the 7-day test limit) |
 
 ## Everyday use
 
@@ -252,7 +358,7 @@ in the `gunzip` line.
 
 | Problem                                          | Look at                                                                 |
 |--------------------------------------------------|-------------------------------------------------------------------------|
-| Browser says the site can't be reached          | `dig +short planner.duckdns.org` shows your Elastic IP? Security group allows 80 and 443? |
+| Browser says the site can't be reached          | `dig +short sufian-planner.duckdns.org` shows your Elastic IP? Security group allows 80 and 443? |
 | Certificate error                                | `journalctl -u caddy -n 50`. Caddy needs the address pointing at the server and port 80 open. |
 | GitHub Actions fails at "Deploy" with ssh errors | The three secrets: no extra spaces, the whole private key, the known-hosts line from step 5.4. |
 | GitHub Actions says "did not start"              | `journalctl -u planner -n 50` on the server. The previous version keeps running. |
