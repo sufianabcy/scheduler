@@ -243,7 +243,9 @@ is deployed (pushed to `main`).
 7. Wait 24 hours (Google's rule after verifying a domain). Then **Branding** → the verification issues panel →
    **I have fixed the issues** → **Proceed**.
 8. When Branding shows no issues: **Audience** → **Publish app** → **Confirm**. The status becomes **In production**:
-   no more 7-day limit, and test users aren't needed any more.
+   no more 7-day limit, and test users aren't needed any more. The Verification Center will still say "data access is
+   not verified": leave it. That review (demo video, and a paid yearly security audit for Gmail access) is only for
+   apps with more than 100 users. Don't submit it.
 9. **Clients** → **Create client** → type **Web application**, name `Planner`. Under
    **Authorized redirect URIs** add both:
    - `https://sufian-planner.duckdns.org/api/mail/callback/google`
