@@ -36,8 +36,24 @@ async function extractBody(payload, fetchAttachment) {
   return part.mimeType === 'text/html' ? { html: content } : { text: content };
 }
 
-/** Gmail through the Gmail REST API. Same functions as graph.js, so the rest of the app doesn't care which it is. */
-export function createGmail({ clientId, clientSecret, endpoints = {} }) {
+/** Lets calls start at most one per `gapMs`, so a sync never bursts past Gmail's per-mailbox rate limit. */
+function pacer(gapMs) {
+  let next = 0;
+  return async () => {
+    const now = Date.now();
+    const wait = Math.max(0, next - now);
+    next = Math.max(now, next) + gapMs;
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  };
+}
+
+/**
+ * Gmail through the Gmail REST API. Same functions as graph.js, so the rest of the app doesn't care which it is.
+ * Gmail limits each mailbox to about 250 "quota units" a second, and reading one mail's headers costs 5. So mails
+ * are read two at a time and at most one every `minGapMs` (default 60 ms: about 80 units a second, a first sync of
+ * 500 mails takes about 30 seconds).
+ */
+export function createGmail({ clientId, clientSecret, endpoints = {}, minGapMs = 60 }) {
   const e = { ...DEFAULT_ENDPOINTS, ...endpoints };
 
   function normalize(m, email) {
@@ -63,7 +79,9 @@ export function createGmail({ clientId, clientSecret, endpoints = {} }) {
   async function fetchMany(token, ids, email) {
     const upserts = [];
     const removes = [];
-    await mapLimit(ids, 4, async (id) => {
+    const pace = pacer(minGapMs);
+    await mapLimit(ids, 2, async (id) => {
+      await pace();
       try {
         const m = await request(`${e.api}/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`, { token });
         const n = normalize(m, email);

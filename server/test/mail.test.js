@@ -371,6 +371,62 @@ describe('mail: Gmail', () => {
     assert.equal((await miles.api('GET', `/api/mail/messages?account=${mail.accountId}`)).body.messages.length, 0);
   });
 
+  test('when Gmail says slow down, the sync waits and tries again', async () => {
+    s = await setup();
+    const { fake, peter } = s;
+    for (let i = 0; i < 4; i++) fake.gmailAdd({ subject: `Mail ${i}` });
+    fake.throttleGmail(2); // 429 "Quota exceeded … per minute per user"
+    await s.connect(peter, 'google');
+    let account = (await peter.api('GET', '/api/mail/accounts')).body.accounts[0];
+    assert.equal(account.lastError, null);
+    assert.equal((await peter.api('GET', '/api/mail/messages')).body.messages.length, 4);
+
+    fake.gmailAdd({ subject: 'After a 403' });
+    fake.throttleGmail(2, '403'); // 403 userRateLimitExceeded
+    await s.tick();
+    account = (await peter.api('GET', '/api/mail/accounts')).body.accounts[0];
+    assert.equal(account.lastError, null);
+    assert.equal((await peter.api('GET', '/api/mail/messages')).body.messages.length, 5);
+  });
+
+  test('if Gmail keeps saying slow down, the account says so plainly and the next sync catches up', async () => {
+    s = await setup();
+    const { fake, peter } = s;
+    fake.gmailAdd({ subject: 'Hello' });
+    await s.connect(peter, 'google');
+    fake.gmailAdd({ subject: 'Waiting' });
+    fake.throttleGmail(100);
+    const realError = console.error;
+    console.error = () => {};
+    try {
+      await s.tick();
+    } finally {
+      console.error = realError;
+    }
+    let account = (await peter.api('GET', '/api/mail/accounts')).body.accounts[0];
+    assert.equal(account.status, 'ok');
+    assert.equal(account.lastError, 'Gmail asked the app to slow down. It tries again by itself in a few minutes.');
+
+    fake.throttleGmail(0);
+    await s.tick();
+    account = (await peter.api('GET', '/api/mail/accounts')).body.accounts[0];
+    assert.equal(account.lastError, null);
+    assert.equal((await peter.api('GET', '/api/mail/messages')).body.messages.length, 2);
+  });
+
+  test('the same account is never synced twice at once', async () => {
+    s = await setup();
+    const { fake, peter, t } = s;
+    fake.gmailAdd({ subject: 'One' });
+    await s.connect(peter, 'google');
+    const id = (await peter.api('GET', '/api/mail/accounts')).body.accounts[0].id;
+    fake.gmailAdd({ subject: 'Two' });
+    const before = fake.calls.gmail.filter((p) => p === '/history').length;
+    await Promise.all([t.mail.syncAccount({ id }), t.mail.syncAccount({ id }), t.mail.syncAccount({ id })]);
+    assert.equal(fake.calls.gmail.filter((p) => p === '/history').length - before, 1);
+    assert.equal((await peter.api('GET', '/api/mail/messages')).body.messages.length, 2);
+  });
+
   test('sync now, paging and filters', async () => {
     s = await setup();
     const { fake, peter } = s;

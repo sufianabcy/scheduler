@@ -18,7 +18,8 @@ export async function startFakeProviders({ clientId = 'test-client', clientSecre
   const codes = new Map(); // code -> { provider, challenge, email }
   const refreshTokens = new Map(); // refresh token -> { provider, email }
   const accessTokens = new Map(); // access token -> { provider, email }
-  const calls = { revoked: [], refreshes: 0, tokenRequests: [] };
+  const calls = { revoked: [], refreshes: 0, tokenRequests: [], gmail: [] };
+  const throttle = { left: 0, kind: '429' };
 
   function issue(provider, email) {
     const refresh = token(`${provider}-refresh`);
@@ -96,6 +97,17 @@ export async function startFakeProviders({ clientId = 'test-client', clientSecre
 
   const g = express.Router();
   g.use(auth('google'));
+  // Throttling like Gmail's: the next `throttle.left` calls answer "slow down" (429, or 403 with a rate-limit reason).
+  g.use((req, res, next) => {
+    calls.gmail.push(req.path);
+    if (throttle.left <= 0) return next();
+    throttle.left -= 1;
+    res.set('Retry-After', '0');
+    if (throttle.kind === '403') {
+      return res.status(403).json({ error: { code: 403, message: 'User-rate limit exceeded.', status: 'PERMISSION_DENIED', errors: [{ reason: 'userRateLimitExceeded' }] } });
+    }
+    res.status(429).json({ error: { code: 429, message: "Quota exceeded for quota metric 'Total Query Cost' and limit 'Units per minute per user'", status: 'RESOURCE_EXHAUSTED' } });
+  });
   g.get('/profile', (req, res) => res.json({ emailAddress: req.email, historyId: String(gmail.historyId) }));
   g.get('/messages', (req, res) => {
     const days = Number(/newer_than:(\d+)d/.exec(req.query.q ?? '')?.[1] ?? 9999);
@@ -211,6 +223,7 @@ export async function startFakeProviders({ clientId = 'test-client', clientSecre
       google: {
         clientId,
         clientSecret,
+        minGapMs: 0,
         endpoints: { authorize: `${url}/google/auth`, token: `${url}/google/token`, revoke: `${url}/google/revoke`, api: `${url}/gmail` },
       },
       microsoft: {
@@ -227,6 +240,12 @@ export async function startFakeProviders({ clientId = 'test-client', clientSecre
       const code = token('code');
       codes.set(code, { provider, challenge: u.searchParams.get('code_challenge'), email: email ?? (provider === 'google' ? gmail.email : graph.email) });
       return code;
+    },
+
+    /** The next `n` Gmail API calls answer "slow down" (kind '429' or '403'). */
+    throttleGmail(n, kind = '429') {
+      throttle.left = n;
+      throttle.kind = kind;
     },
 
     /** Makes every current access token stop working (as if they expired). */

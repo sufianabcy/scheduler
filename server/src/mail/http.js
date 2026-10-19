@@ -9,11 +9,29 @@ export class ProviderError extends Error {
   }
 }
 
+const RATE_REASONS = new Set(['rateLimitExceeded', 'userRateLimitExceeded', 'RESOURCE_EXHAUSTED']);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** True when the provider said "too many requests, slow down" (Gmail: 429, or 403 with a rate-limit reason). */
+export const isRateLimited = (err) => err instanceof ProviderError && (err.status === 429 || RATE_REASONS.has(err.code));
+
 /**
  * Calls a JSON API. `form` sends application/x-www-form-urlencoded (OAuth token endpoints), `json` a JSON body.
  * Returns the parsed body (or null for an empty one); throws ProviderError for any non-2xx answer.
+ * When the provider says to slow down, it waits (Retry-After, or 2, 4, 8 seconds) and tries again, up to `retries` times.
  */
-export async function request(url, { method = 'GET', token, headers = {}, form, json, timeoutMs = 20_000 } = {}) {
+export async function request(url, { method = 'GET', token, headers = {}, form, json, timeoutMs = 20_000, retries = 3 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await requestOnce(url, { method, token, headers, form, json, timeoutMs });
+    } catch (err) {
+      if (!isRateLimited(err) || attempt >= retries) throw err;
+      await sleep(err.retryAfterMs ?? 2000 * 2 ** attempt);
+    }
+  }
+}
+
+async function requestOnce(url, { method, token, headers, form, json, timeoutMs }) {
   const init = { method, headers: { Accept: 'application/json', ...headers }, signal: AbortSignal.timeout(timeoutMs) };
   if (token) init.headers.Authorization = `Bearer ${token}`;
   if (form) {
@@ -38,10 +56,20 @@ export async function request(url, { method = 'GET', token, headers = {}, form, 
     body = null;
   }
   if (!res.ok) {
-    // OAuth errors: { error: 'invalid_grant', error_description }; API errors: { error: { code, message, status } }.
-    const code = typeof body?.error === 'string' ? body.error : (body?.error?.status ?? body?.error?.code ?? null);
+    // OAuth errors: { error: 'invalid_grant', error_description }; Google API errors: { error: { code, message, status,
+    // errors: [{ reason }] } }; Graph: { error: { code, message } }. A rate-limit reason wins, so it can be spotted.
+    const reason = body?.error?.errors?.[0]?.reason;
+    const code =
+      typeof body?.error === 'string'
+        ? body.error
+        : RATE_REASONS.has(reason)
+          ? reason
+          : (body?.error?.status ?? body?.error?.code ?? null);
     const detail = body?.error_description ?? body?.error?.message ?? `HTTP ${res.status}`;
-    throw new ProviderError(String(detail).slice(0, 300), { status: res.status, code });
+    const err = new ProviderError(String(detail).slice(0, 300), { status: res.status, code });
+    const retryAfter = Number(res.headers.get('retry-after'));
+    if (res.headers.has('retry-after') && Number.isFinite(retryAfter)) err.retryAfterMs = Math.min(retryAfter, 60) * 1000;
+    throw err;
   }
   return body;
 }

@@ -3,7 +3,7 @@ import { HttpError, badRequest, notFound } from '../http.js';
 import { createTokenBox, loadKey } from './crypto.js';
 import { createGmail } from './gmail.js';
 import { createGraph } from './graph.js';
-import { CursorExpired, ProviderError } from './http.js';
+import { CursorExpired, ProviderError, isRateLimited } from './http.js';
 import { createOAuth } from './oauth.js';
 
 export const SYNC_DAYS = 30;
@@ -71,6 +71,8 @@ export function createMail(db, { config, now = () => new Date(), providers } = {
   // Access tokens last about an hour; they're kept in memory only and refreshed when needed.
   const accessTokens = new Map();
   let syncing = false;
+  // Syncs running right now, by account id.
+  const running = new Map();
   // First syncs started by a new connection run in the background; tests wait for them with settled().
   const background = new Set();
 
@@ -203,8 +205,18 @@ export function createMail(db, { config, now = () => new Date(), providers } = {
     });
   }
 
-  /** Brings one account up to date: only the changes when it can, a full sync the first time or when it must. */
-  async function syncAccount(account) {
+  /**
+   * Brings one account up to date: only the changes when it can, a full sync the first time or when it must.
+   * One sync per account at a time: a second call while one runs (the timer and "Sync now", say) waits for it.
+   */
+  function syncAccount(account) {
+    if (running.has(account.id)) return running.get(account.id);
+    const sync = runSync(q.accountById.get(account.id) ?? account).finally(() => running.delete(account.id));
+    running.set(account.id, sync);
+    return sync;
+  }
+
+  async function runSync(account) {
     const provider = providerOf(account);
     const ctx = { email: account.email, sinceDays: SYNC_DAYS, limit: KEEP_PER_ACCOUNT };
     try {
@@ -226,8 +238,11 @@ export function createMail(db, { config, now = () => new Date(), providers } = {
       if (err instanceof NeedsReconnect) return { ok: false, needsReconnect: true };
       // Never log tokens or mail: the account id and the provider's error code are enough to look into it.
       console.error(`Mail sync failed for account ${account.id}: ${err.status ?? ''} ${err.code ?? err.name}`);
-      q.failed.run(String(err.message).slice(0, 300), iso(), account.id);
-      return { ok: false, error: err.message };
+      const message = isRateLimited(err)
+        ? `${provider.label} asked the app to slow down. It tries again by itself in a few minutes.`
+        : String(err.message).slice(0, 300);
+      q.failed.run(message, iso(), account.id);
+      return { ok: false, error: message };
     }
   }
 
