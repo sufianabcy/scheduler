@@ -1,0 +1,87 @@
+# On every push to main: run the tests, build the web app, and (once the server's secrets are set) upload the new
+# version to the server and switch to it. If the new version doesn't start, the server keeps the previous one.
+#
+# Secrets (repository → Settings → Secrets and variables → Actions), see DEPLOY.md:
+#   DEPLOY_HOST         the server's address, e.g. planner.duckdns.org
+#   DEPLOY_SSH_KEY      the private deploy key (contents of ~/.ssh/planner_deploy)
+#   DEPLOY_KNOWN_HOSTS  the line printed at the end of deploy/setup-server.sh
+# Without DEPLOY_HOST the workflow only tests and builds.
+
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-build-deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CAN_DEPLOY: ${{ secrets.DEPLOY_HOST != '' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            web/package-lock.json
+
+      - name: Install
+        run: |
+          npm ci --prefix server
+          npm ci --prefix web
+
+      - name: Test
+        run: |
+          npm test --prefix server
+          npm test --prefix web
+
+      - name: Build the web app
+        run: npm run build --prefix web
+
+      - name: Package
+        run: |
+          # Only production packages go to the server. They must be plain JavaScript, because they're
+          # installed here (x86) and run on the server (ARM).
+          npm ci --prefix server --omit=dev
+          if find server/node_modules -name '*.node' | grep -q .; then
+            echo "A server package has native code; install it on the server instead." >&2
+            exit 1
+          fi
+          mkdir -p out/release/server out/release/web
+          cp -R server/src server/package.json server/package-lock.json server/node_modules out/release/server/
+          cp -R web/dist out/release/web/dist
+          cp -R deploy out/release/deploy
+          tar -czf out/release.tar.gz -C out/release .
+          ls -lh out/release.tar.gz
+
+      - name: Deploy
+        if: env.CAN_DEPLOY == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          id="$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+          ssh_opts=(-i ~/.ssh/deploy -o StrictHostKeyChecking=yes -o ConnectTimeout=20)
+          scp "${ssh_opts[@]}" out/release.tar.gz "deploy@${DEPLOY_HOST}:/opt/planner/incoming/${id}.tar.gz"
+          ssh "${ssh_opts[@]}" "deploy@${DEPLOY_HOST}" \
+            "set -e; mkdir -p /opt/planner/releases/${id}; tar -xzf /opt/planner/incoming/${id}.tar.gz -C /opt/planner/releases/${id}; bash /opt/planner/releases/${id}/deploy/release.sh ${id}"
+
+      - name: Deploy skipped
+        if: env.CAN_DEPLOY != 'true'
+        run: echo "Tested and built only. Deploys run on pushes to main once the DEPLOY_* secrets are set (see DEPLOY.md)."

@@ -110,21 +110,25 @@ if it was off at midnight.
 
 ## 9. Hosting and cost
 
-- **Server:** with Node + SQLite, a 512 MB server is enough.
-  - EC2 `t3.micro` if the account is in its 12-month free tier.
-  - Otherwise Lightsail 512 MB, $5/month including the public IP address.
-- **Domain:** free DuckDNS subdomain. **(name to be picked)**
-- **Backups:** nightly copy of the SQLite file to S3, kept for 30 days.
-- **Deploys:** code on GitHub. Each push to `main` makes GitHub Actions copy the new build to the server and restart
-  it.
+The AWS account was created after 15 July 2025, so it's on AWS's Free plan: $100–200 in credits for up to 6 months.
+Before that ends it must be upgraded to the Paid plan, or AWS pauses the account.
 
-| Item                | EC2 free tier | After free tier (EC2) | Lightsail 512 MB |
-|---------------------|---------------|-----------------------|------------------|
-| Server              | $0            | ~$7.5                 | $5 (IP and disk included) |
-| Public IPv4         | $0            | ~$3.6                 | included         |
-| Disk                | $0            | ~$0.7                 | included         |
-| S3 backups          | ~$0           | ~$0.05                | ~$0.05           |
-| **Total per month** | **~$0**       | **~$12**              | **~$5**          |
+- **Server:** EC2 `t4g.micro` (ARM, 1 GB RAM) with Ubuntu 24.04 in Mumbai, a 10 GB disk and a fixed (Elastic) IP.
+  The app uses about 85 MB of RAM.
+- **Address:** `planner.duckdns.org` (free DuckDNS name; another name if that one is taken).
+- **HTTPS:** Caddy, with a free Let's Encrypt certificate that renews itself.
+- **Backups:** nightly at 03:30 IST; 7 days on the server, 30 days in S3.
+- **Deploys:** every push to `main` runs the tests in GitHub Actions, uploads the build and switches to it. If the new
+  version doesn't start, the server keeps the previous one.
+- Step-by-step setup: [DEPLOY.md](DEPLOY.md).
+
+| Item                | Per month (paid from credits while they last) |
+|---------------------|-----------------------------------------------|
+| Server              | ~$6                                           |
+| Public IPv4         | ~$3.60                                        |
+| Disk (10 GB gp3)    | ~$1                                           |
+| S3 backups          | ~$0.01                                        |
+| **Total**           | **~$10**                                      |
 
 ## 10. Build order
 
@@ -138,8 +142,5 @@ if it was off at midnight.
 
 ## 11. Open questions
 
-1. When was the AWS account created: before or after 15 July 2025? This decides EC2 free tier vs Lightsail.
-   Only needed at step 6.
-2. What web address do you want, e.g. `spidey-planner.duckdns.org`? Only needed at step 6.
-3. Check the **(assumed)** items above: missed repeating tasks, the calendar week, and carried goals keeping their
+1. Check the **(assumed)** items above: missed repeating tasks, the calendar week, and carried goals keeping their
    finished tasks.

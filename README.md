@@ -12,7 +12,7 @@ See [SPEC.md](SPEC.md) for what it does and how it's built.
 | 3    | Daily plan, repeating tasks, Unfinished, clean-up | Done    |
 | 4    | Screens and app install                           | Done    |
 | 5    | Push notifications                                | Done    |
-| 6    | AWS, HTTPS, backups, auto-deploy                  | Next    |
+| 6    | AWS, HTTPS, backups, auto-deploy                  | Ready to set up: see [DEPLOY.md](DEPLOY.md) |
 | 7    | Spider-Man design pass                            | Done (two rounds) |
 
 ## Run it locally
@@ -47,6 +47,17 @@ Install page as app). Installing on an Android phone needs HTTPS, so that comes 
 
 Optional: copy `server/.env.example` to `server/.env` to change the port or database path.
 The database file is `server/data/planner.db` by default.
+
+## Deploy
+
+[DEPLOY.md](DEPLOY.md) walks through the one-time AWS setup. After that, every push to `main` runs the tests and
+deploys through GitHub Actions (`.github/workflows/deploy.yml`). Server scripts are in `deploy/`:
+
+| File                       | What it does                                                                 |
+|----------------------------|------------------------------------------------------------------------------|
+| `deploy/setup-server.sh`   | One-time setup of an Ubuntu 24.04 server: Node 24, Caddy (HTTPS), users, services, nightly backup timer |
+| `deploy/release.sh`        | Switches the server to an uploaded version; switches back if it doesn't start |
+| `deploy/backup.sh`         | Nightly SQLite backup, kept 7 days on the server and 30 days in S3            |
 
 ## Manage accounts
 
