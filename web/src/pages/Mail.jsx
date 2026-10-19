@@ -10,6 +10,22 @@ import { toast } from '../toast.js';
 
 const Dot = ({ color }) => <span class="mail-dot" style={{ background: accountColor(color) }} aria-hidden="true" />;
 
+/** Inbox / Starred / Accounts, on every Mail screen. */
+function MailTabs({ current }) {
+  const tab = (key, href, label) => (
+    <a class="chip" href={href} aria-current={current === key ? 'page' : undefined}>
+      {label}
+    </a>
+  );
+  return (
+    <div class="mail-tabs section" role="navigation" aria-label="Mail views">
+      {tab('inbox', '#/mail', 'Inbox')}
+      {tab('starred', '#/mail/starred', <><Icon name="star" size={14} /> Starred</>)}
+      {tab('accounts', '#/mail/accounts', 'Accounts')}
+    </div>
+  );
+}
+
 /** Buttons that start connecting an account: a full-page trip to Google or Microsoft and back. */
 function ConnectButtons({ status }) {
   const { google, microsoft } = status.providers;
@@ -162,17 +178,7 @@ export function MailList({ view = 'inbox' }) {
       ) : (
         <>
           <ReconnectBanners accounts={accounts} />
-          <div class="mail-tabs section" role="navigation" aria-label="Mail views">
-            <a class="chip" href="#/mail" aria-current={view === 'inbox' ? 'page' : undefined}>
-              Inbox
-            </a>
-            <a class="chip" href="#/mail/starred" aria-current={view === 'starred' ? 'page' : undefined}>
-              <Icon name="star" size={14} /> Starred
-            </a>
-            <a class="chip" href="#/mail/accounts">
-              Accounts
-            </a>
-          </div>
+          <MailTabs current={view} />
           {accounts.length > 1 && (
             <div class="chips" role="group" aria-label="Show mail from" style={{ marginBottom: '10px' }}>
               <button type="button" class="chip" aria-pressed={accountId === null} onClick={() => setAccountId(null)}>
@@ -382,11 +388,12 @@ export function MailAccounts() {
 
   return (
     <>
-      <PageHeader title="Mail accounts" sub="Connected through Google's and Microsoft's own sign-in. The app never sees your passwords." />
+      <PageHeader title="Mail accounts" sub="Connected through the provider's own sign-in. The app never sees your passwords." />
       {!status.enabled ? (
         <NotSetUp />
       ) : (
         <>
+          {accounts.length > 0 && <MailTabs current="accounts" />}
           <div class="card">
             <ul class="list">
               {accounts.map((a) => (
