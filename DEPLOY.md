@@ -218,20 +218,27 @@ is deployed (pushed to `main`).
 
 1. Go to https://console.cloud.google.com and create a project called `Planner`.
 2. **APIs & Services** → **Library** → search **Gmail API** → **Enable**.
-3. **Google Auth Platform** → **Branding**: app name `Planner`, your email as support and developer contact
-   → **Save**. **Audience**: user type **External**.
+3. **Google Auth Platform** → **Branding**:
+   - App name `Planner`, your email as user support email
+   - **App domain**: home page `https://sufian-planner.duckdns.org`, privacy policy
+     `https://sufian-planner.duckdns.org/privacy.html` (the page comes with the app; deploy first)
+   - **Authorized domains**: **Add domain** → `sufian-planner.duckdns.org`
+   - Developer contact: your email → **Save**
+
+   **Audience**: user type **External**.
 4. **Data access** → **Add or remove scopes** → paste `https://www.googleapis.com/auth/gmail.modify` →
    **Add to table** → **Update** → **Save**. (Read and star; it can't send mail.)
-5. **Audience** → **Test users** → **Add users**: every Gmail address you'll connect.
+5. **Audience** → **Publish app** → **Confirm**. The status changes from "Testing" to **In production**. Now any
+   Gmail address can connect (no test-user list to keep up), and Google won't end the connection every 7 days.
+   Google may say the app needs verification: you can ignore that, it's only needed for apps with more than 100 users.
 6. **Clients** → **Create client** → type **Web application**, name `Planner`. Under
    **Authorized redirect URIs** add both:
    - `https://sufian-planner.duckdns.org/api/mail/callback/google`
    - `http://localhost:3000/api/mail/callback/google` (only for trying it on your Mac)
 
    → **Create**. Copy the **Client ID** and **Client secret**.
-7. Once connecting works: **Audience** → **Publish app** → **In production**. While it says "Testing", Google ends the
-   connection every 7 days. After publishing, connecting shows "Google hasn't verified this app": click
-   **Advanced** → **Go to Planner**. That's expected for a personal app.
+7. When you connect Gmail in the app, Google shows "Google hasn't verified this app". That's expected for a personal
+   app: click **Advanced** → **Go to Planner (unsafe)**, tick the box to allow Gmail access → **Continue**.
 
 ### Microsoft (Outlook.com, Hotmail and Microsoft 365)
 
@@ -307,9 +314,9 @@ Microsoft only send you back to that address, and the login cookie for `127.0.0.
 |-----------------------------------------------------|---------------------------------------------------------------------|
 | Google: `redirect_uri_mismatch`                     | The redirect URI in step 6 must match exactly, `https` and all     |
 | Microsoft: `AADSTS50011`                            | Same, under Authentication                                          |
-| Google: "Access blocked" / `access_denied`          | Add the address as a test user (Google step 5)                      |
+| Google: "Access blocked" / `access_denied`          | The app isn't published yet (Google step 5)                         |
 | "Gmail is not set up on the server yet"             | The client ID or secret is missing in `/etc/planner.env`; restart after adding |
-| An account says "Needs reconnecting"                | Tap **Reconnect** (password changed, access removed, or the 7-day test limit) |
+| An account says "Needs reconnecting"                | Tap **Reconnect** (password changed or access removed)            |
 
 ## Everyday use
 

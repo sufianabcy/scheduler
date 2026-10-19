@@ -5,7 +5,7 @@
 // - Other files (scripts, styles, icons): saved on first use. Built file names change with every build.
 // Bump SHELL when this file's caching rules change, to drop the old caches.
 
-const SHELL = 'shell-v3';
+const SHELL = 'shell-v4';
 const API = 'api';
 // Registered as /sw.js?dev by the development server: notifications only, no caching.
 const DEV = new URL(self.location.href).searchParams.has('dev');
@@ -44,7 +44,8 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request, API));
   } else if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, SHELL, '/'));
+    // Only the app itself is saved as the offline page; other pages (like /privacy.html) just load normally.
+    if (url.pathname === '/' || url.pathname === '/index.html') event.respondWith(networkFirst(request, SHELL, '/'));
   } else {
     event.respondWith(cacheFirst(request));
   }
