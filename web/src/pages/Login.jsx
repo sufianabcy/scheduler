@@ -62,6 +62,9 @@ export function Login({ onLogin }) {
         <button class="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%' }}>
           {busy ? 'Logging in…' : 'Log in'}
         </button>
+        <p class="small muted" style={{ margin: '16px 0 0', textAlign: 'center' }}>
+          <a href="/about.html">About Planner</a> · <a href="/privacy.html">Privacy policy</a>
+        </p>
       </form>
     </div>
   );
