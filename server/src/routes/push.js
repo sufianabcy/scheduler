@@ -56,7 +56,7 @@ export function pushRoutes({ push }) {
   router.post('/test', async (req, res) => {
     if (push.devices(req.user.id) === 0) throw conflict('Turn on notifications on this device first');
     const result = await push.sendTo(req.user.id, {
-      title: 'Spidey sense tingling',
+      title: 'Test notification',
       body: 'Notifications work on this device.',
       url: '/#/more',
       tag: 'test',

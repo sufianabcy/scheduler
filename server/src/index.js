@@ -14,7 +14,7 @@ const app = createApp({ db, config, jobs, push, mail });
 const stopJobs = jobs.start();
 
 const server = app.listen(config.port, config.host, () => {
-  console.log(`Spidey Planner API on http://${config.host}:${config.port} (db: ${config.dbPath})`);
+  console.log(`Planner API on http://${config.host}:${config.port} (db: ${config.dbPath})`);
 });
 
 function shutdown() {

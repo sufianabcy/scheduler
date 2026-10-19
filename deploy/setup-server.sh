@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup of a fresh Ubuntu 24.04 server for Spidey Planner. Safe to run again.
+# One-time setup of a fresh Ubuntu 24.04 server for Planner. Safe to run again.
 #
 # Usage (on the server, as the default "ubuntu" user):
 #   sudo DOMAIN=sufian-planner.duckdns.org EMAIL=you@example.com BACKUP_BUCKET=my-bucket bash setup-server.sh planner_deploy.pub
@@ -116,7 +116,7 @@ fi
 step "Installing systemd services"
 cat > /etc/systemd/system/planner.service <<'EOF'
 [Unit]
-Description=Spidey Planner
+Description=Planner
 After=network-online.target
 Wants=network-online.target
 
@@ -142,7 +142,7 @@ EOF
 
 cat > /etc/systemd/system/planner-backup.service <<'EOF'
 [Unit]
-Description=Spidey Planner database backup
+Description=Planner database backup
 After=network-online.target
 
 [Service]
@@ -160,7 +160,7 @@ EOF
 
 cat > /etc/systemd/system/planner-backup.timer <<'EOF'
 [Unit]
-Description=Nightly Spidey Planner backup (03:30 IST)
+Description=Nightly Planner backup (03:30 IST)
 
 [Timer]
 OnCalendar=*-*-* 03:30:00 Asia/Kolkata
@@ -177,7 +177,7 @@ systemctl start planner-backup.timer
 # A command to manage accounts: sudo planner-user add you@example.com
 cat > /usr/local/bin/planner-user <<'EOF'
 #!/usr/bin/env bash
-# Manage Spidey Planner logins: planner-user add|passwd|list|remove <email> [--yes]
+# Manage Planner logins: planner-user add|passwd|list|remove <email> [--yes]
 set -euo pipefail
 cd /opt/planner/current/server
 exec sudo -u planner bash -c 'set -a; . /etc/planner.env; set +a; exec node --disable-warning=ExperimentalWarning src/cli/users.js "$@"' _ "$@"

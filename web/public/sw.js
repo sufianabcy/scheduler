@@ -83,7 +83,7 @@ self.addEventListener('push', (event) => {
     message = { body: event.data?.text() };
   }
   event.waitUntil(
-    self.registration.showNotification(message.title ?? 'Spidey Planner', {
+    self.registration.showNotification(message.title ?? 'Planner', {
       body: message.body ?? '',
       icon: '/icons/icon-192.png',
       badge: '/icons/badge-96.png',

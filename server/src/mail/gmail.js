@@ -104,7 +104,7 @@ export function createGmail({ clientId, clientSecret, endpoints = {} }) {
         form: { code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code', code_verifier: verifier },
       });
       if (!t.refresh_token) {
-        throw new ProviderError('Google did not hand out a refresh token. Remove "Spidey Planner" at myaccount.google.com/permissions and connect again.');
+        throw new ProviderError('Google did not hand out a refresh token. Remove "Planner" at myaccount.google.com/permissions and connect again.');
       }
       return { refreshToken: t.refresh_token, accessToken: t.access_token, expiresIn: t.expires_in, scope: t.scope ?? GOOGLE_SCOPES.join(' ') };
     },

@@ -1,8 +1,8 @@
 {
-  "name": "spidey-planner-server",
+  "name": "planner-server",
   "version": "0.1.0",
   "private": true,
-  "description": "API server for Spidey Planner",
+  "description": "API server for Planner",
   "type": "module",
   "engines": {
     "node": ">=24"

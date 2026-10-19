@@ -28,7 +28,7 @@ export function Login({ onLogin }) {
     <div class="login">
       <form class="card" onSubmit={submit}>
         <div class="login-hero" aria-hidden="true" />
-        <h1>Spidey Planner</h1>
+        <h1>Planner</h1>
         <p>Log in to plan your day.</p>
         {error && (
           <div class="form-error" role="alert">

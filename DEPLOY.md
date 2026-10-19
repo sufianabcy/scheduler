@@ -1,4 +1,4 @@
-# Deploying Spidey Planner to AWS
+# Deploying Planner to AWS
 
 The same guide as a doc you can open on your phone:
 https://claude.ai/code/artifact/a6d64265-f475-46dc-9469-6b388ca57d69
@@ -20,7 +20,7 @@ Values used below. Write yours down as you create them:
 |-----------------------------|-----------------------------------|-------|
 | Web address                 | `sufian-planner.duckdns.org`      | `sufian-planner.duckdns.org` |
 | Server IP (Elastic IP)      | `13.200.10.20`                    |       |
-| Backup bucket               | `spidey-planner-backups-sufian`   |       |
+| Backup bucket               | `planner-backups-sufian`   |       |
 | Your email                  | `you@example.com`                 |       |
 
 ---
@@ -61,7 +61,7 @@ EC2 → **Instances** → **Launch instances**:
 
 | Setting                | Choose                                                                 |
 |------------------------|------------------------------------------------------------------------|
-| Name                   | `spidey-planner`                                                       |
+| Name                   | `planner`                                                       |
 | Application and OS     | **Ubuntu**, *Ubuntu Server 24.04 LTS*, architecture **64-bit (Arm)**   |
 | Instance type          | **t4g.micro**                                                          |
 | Key pair               | `planner-admin`                                                        |
@@ -77,7 +77,7 @@ HTTPS.
 ### 2.3 A fixed IP address
 
 EC2 → **Elastic IPs** → **Allocate Elastic IP address** → **Allocate**. Then select it → **Actions** →
-**Associate Elastic IP address** → instance `spidey-planner` → **Associate**.
+**Associate Elastic IP address** → instance `planner` → **Associate**.
 
 Write down this IP. It stays the same even if you stop and start the server.
 
@@ -86,7 +86,7 @@ Write down this IP. It stays the same even if you stop and start the server.
 ### 3.1 The bucket
 
 S3 → **Create bucket**:
-- Name: something unique, e.g. `spidey-planner-backups-sufian` (S3 names are global).
+- Name: something unique, e.g. `planner-backups-sufian` (S3 names are global).
 - Region: Mumbai. Leave **Block all public access** on. → **Create bucket**.
 
 Open the bucket → **Management** → **Create lifecycle rule**:
@@ -108,7 +108,7 @@ Open the role → **Add permissions** → **Create inline policy** → **JSON**,
     {
       "Effect": "Allow",
       "Action": "s3:PutObject",
-      "Resource": "arn:aws:s3:::spidey-planner-backups-sufian/planner/*"
+      "Resource": "arn:aws:s3:::planner-backups-sufian/planner/*"
     }
   ]
 }
@@ -116,7 +116,7 @@ Open the role → **Add permissions** → **Create inline policy** → **JSON**,
 
 → **Next** → name `write-planner-backups` → **Create policy**.
 
-EC2 → select `spidey-planner` → **Actions** → **Security** → **Modify IAM role** → `planner-backup` → **Update IAM role**.
+EC2 → select `planner` → **Actions** → **Security** → **Modify IAM role** → `planner-backup` → **Update IAM role**.
 
 The server can only add files under `planner/` in that bucket: it can't read, list or delete anything.
 
@@ -162,7 +162,7 @@ ssh -i ~/.ssh/planner-admin.pem ubuntu@13.200.10.20
 skipped step 3). It takes about 5 minutes:
 
 ```bash
-sudo DOMAIN=sufian-planner.duckdns.org EMAIL=you@example.com BACKUP_BUCKET=spidey-planner-backups-sufian bash setup-server.sh planner_deploy.pub
+sudo DOMAIN=sufian-planner.duckdns.org EMAIL=you@example.com BACKUP_BUCKET=planner-backups-sufian bash setup-server.sh planner_deploy.pub
 ```
 
 It ends with a line like this. **Copy it** for the next step:
@@ -216,14 +216,14 @@ is deployed (pushed to `main`).
 
 ### Google (for every Gmail account)
 
-1. Go to https://console.cloud.google.com and create a project called `Spidey Planner`.
+1. Go to https://console.cloud.google.com and create a project called `Planner`.
 2. **APIs & Services** → **Library** → search **Gmail API** → **Enable**.
-3. **Google Auth Platform** → **Branding**: app name `Spidey Planner`, your email as support and developer contact
+3. **Google Auth Platform** → **Branding**: app name `Planner`, your email as support and developer contact
    → **Save**. **Audience**: user type **External**.
 4. **Data access** → **Add or remove scopes** → paste `https://www.googleapis.com/auth/gmail.modify` →
    **Add to table** → **Update** → **Save**. (Read and star; it can't send mail.)
 5. **Audience** → **Test users** → **Add users**: every Gmail address you'll connect.
-6. **Clients** → **Create client** → type **Web application**, name `Spidey Planner`. Under
+6. **Clients** → **Create client** → type **Web application**, name `Planner`. Under
    **Authorized redirect URIs** add both:
    - `https://sufian-planner.duckdns.org/api/mail/callback/google`
    - `http://localhost:3000/api/mail/callback/google` (only for trying it on your Mac)
@@ -231,13 +231,13 @@ is deployed (pushed to `main`).
    → **Create**. Copy the **Client ID** and **Client secret**.
 7. Once connecting works: **Audience** → **Publish app** → **In production**. While it says "Testing", Google ends the
    connection every 7 days. After publishing, connecting shows "Google hasn't verified this app": click
-   **Advanced** → **Go to Spidey Planner**. That's expected for a personal app.
+   **Advanced** → **Go to Planner**. That's expected for a personal app.
 
 ### Microsoft (Outlook.com, Hotmail and Microsoft 365)
 
 1. Go to https://entra.microsoft.com and sign in with any Microsoft account. **App registrations** →
    **New registration**:
-   - Name `Spidey Planner`
+   - Name `Planner`
    - Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**
    - Redirect URI: platform **Web**, `https://sufian-planner.duckdns.org/api/mail/callback/microsoft`
 

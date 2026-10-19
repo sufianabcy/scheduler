@@ -125,7 +125,7 @@ export function App() {
       <nav class="nav" aria-label="Main">
         <div class="brand">
           <img src="/icons/icon-192.png" alt="" />
-          Spidey Planner
+          Planner
         </div>
         {NAV.map((item) => (
           <a key={item.path} href={`#${item.path}`} aria-current={section === item.section ? 'page' : undefined}>

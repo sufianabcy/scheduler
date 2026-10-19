@@ -1,4 +1,4 @@
-# Spidey Planner
+# Planner
 
 Daily planner with monthly goals and step-by-step projects, installed as an app from Chrome on Android and Mac.
 See [SPEC.md](SPEC.md) for what it does and how it's built.

@@ -1,4 +1,4 @@
-# Spidey Planner: spec v0.2
+# Planner: spec v0.2
 
 A light daily planner with monthly goals and step-by-step projects. Installed from Chrome on an Android phone
 (home-screen icon) and on a Mac (Dock icon). Hosted on AWS, Mumbai region (ap-south-1).
@@ -89,7 +89,8 @@ if it was off at midnight.
 
 ## 7. Design
 
-- Spider-Man theme. Dark by default, with a light mode switch.
+- The look is a swappable theme (all colours, fonts and the header art live in `web/src/theme.css` and the hero image).
+  The current theme is Spider-Man. Dark by default, with a light mode switch.
 - Small CSS-only animations, e.g. a web-shot when you finish a task.
 - You'll share reference images after the app is working. All colours and fonts are kept in one theme file, so
   restyling later is quick.
