@@ -263,6 +263,9 @@ describe('mail: Gmail', () => {
     let account = (await peter.api('GET', '/api/mail/accounts')).body.accounts[0];
     assert.equal(account.status, 'needs_reconnect');
     assert.match(account.lastError, /connect the account again/);
+    s.clock.now = new Date(s.clock.now.getTime() + MINUTE);
+    const synced = await peter.api('POST', `/api/mail/accounts/${accountId}/sync`);
+    assert.deepEqual(synced.body.result, { ok: false, needsReconnect: true });
     // Its mail stays visible; reading a body asks to reconnect.
     const id = (await peter.api('GET', '/api/mail/messages')).body.messages[0].id;
     assert.equal((await peter.api('GET', `/api/mail/messages/${id}/body`)).status, 409);
@@ -365,6 +368,7 @@ describe('mail: Gmail', () => {
       ['POST', `/api/mail/messages/${mail.id}/star`, { starred: true }],
       ['POST', `/api/mail/messages/${mail.id}/task`, {}],
       ['DELETE', `/api/mail/accounts/${mail.accountId}`],
+      ['POST', `/api/mail/accounts/${mail.accountId}/sync`],
     ]) {
       assert.equal((await miles.api(method, path, body)).status, 404, `${method} ${path}`);
     }
@@ -440,8 +444,20 @@ describe('mail: Gmail', () => {
     res = await peter.api('POST', '/api/mail/sync');
     assert.equal(res.body.accounts[0].unread, 6);
 
+    // Sync on one account: the same 20-second rule, then it fetches.
+    const accountId = res.body.accounts[0].id;
+    fake.gmailAdd({ subject: 'Later still' });
+    res = await peter.api('POST', `/api/mail/accounts/${accountId}/sync`);
+    assert.deepEqual(res.body.result, { ok: true, skipped: true });
+    assert.equal(res.body.accounts[0].unread, 6);
+    s.clock.now = new Date(s.clock.now.getTime() + 30_000);
+    res = await peter.api('POST', `/api/mail/accounts/${accountId}/sync`);
+    assert.deepEqual(res.body.result, { ok: true });
+    assert.equal(res.body.accounts[0].unread, 7);
+    assert.equal((await peter.api('POST', '/api/mail/accounts/abc/sync')).status, 404);
+
     const all = (await peter.api('GET', '/api/mail/messages')).body;
-    assert.equal(all.messages.length, 6);
+    assert.equal(all.messages.length, 7);
     assert.equal(all.hasMore, false);
     const older = (await peter.api('GET', `/api/mail/messages?before=${encodeURIComponent(all.messages[2].receivedAt)}`)).body;
     assert.deepEqual(older.messages.map((m) => m.subject), all.messages.slice(3).map((m) => m.subject));

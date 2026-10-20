@@ -162,7 +162,7 @@ export function MailList({ view = 'inbox' }) {
         aside={
           accounts.length > 0 && (
             <button type="button" class="icon-btn" aria-label="Sync now" disabled={syncing} onClick={syncNow}>
-              <Icon name="refresh" />
+              <Icon name="refresh" class={syncing ? 'spinning' : undefined} />
             </button>
           )
         }
@@ -359,7 +359,8 @@ export function MailDetail({ id }) {
 
 /** Connected accounts: status, reconnect, disconnect, and connect new ones. */
 export function MailAccounts() {
-  const { data, error, reload } = useLoad(() => Promise.all([get('/mail/status'), get('/mail/accounts')]), []);
+  const { data, error, reload, setData } = useLoad(() => Promise.all([get('/mail/status'), get('/mail/accounts')]), []);
+  const [syncing, setSyncing] = useState(null); // an account id, or 'all'
 
   // Coming back from Google or Microsoft: say how it went, once, then tidy the address.
   useEffect(() => {
@@ -386,9 +387,42 @@ export function MailAccounts() {
     if ((await attempt(del(`/mail/accounts/${a.id}`))) !== undefined) reload();
   };
 
+  const showAccounts = (list) => setData([status, { accounts: list }]);
+
+  const syncAll = async () => {
+    setSyncing('all');
+    const res = await attempt(post('/mail/sync'));
+    setSyncing(null);
+    if (!res) return;
+    showAccounts(res.accounts);
+    const failed = res.accounts.filter((a) => a.status === 'needs_reconnect' || a.lastError).length;
+    toast(failed ? `Synced; ${failed} account${failed > 1 ? 's' : ''} had a problem` : 'Mail is up to date');
+  };
+
+  const syncOne = async (a) => {
+    setSyncing(a.id);
+    const res = await attempt(post(`/mail/accounts/${a.id}/sync`));
+    setSyncing(null);
+    if (!res) return;
+    showAccounts(res.accounts);
+    const { result } = res;
+    toast(result.needsReconnect ? `${a.email} needs reconnecting` : result.error ? `Couldn't sync ${a.email}` : `${a.email} is up to date`);
+  };
+
   return (
     <>
-      <PageHeader title="Mail accounts" sub="Connected through the provider's own sign-in. The app never sees your passwords." />
+      <PageHeader
+        title="Mail accounts"
+        sub="Connected through the provider's own sign-in. The app never sees your passwords."
+        aside={
+          status.enabled &&
+          accounts.length > 1 && (
+            <button type="button" class="btn btn-small" disabled={syncing !== null} onClick={syncAll}>
+              <Icon name="refresh" size={16} class={syncing === 'all' ? 'spinning' : undefined} /> {syncing === 'all' ? 'Syncing…' : 'Sync all'}
+            </button>
+          )
+        }
+      />
       {!status.enabled ? (
         <NotSetUp />
       ) : (
@@ -412,10 +446,21 @@ export function MailAccounts() {
                       )}
                     </div>
                   </div>
-                  {a.status === 'needs_reconnect' && (
+                  {a.status === 'needs_reconnect' ? (
                     <a class="btn btn-primary btn-small" href={`/api/mail/connect/${a.provider}`}>
                       Reconnect
                     </a>
+                  ) : (
+                    <button
+                      type="button"
+                      class="btn btn-small account-sync"
+                      aria-label={`Sync ${a.email} now`}
+                      disabled={syncing !== null || !a.lastSyncedAt}
+                      onClick={() => syncOne(a)}
+                    >
+                      <Icon name="refresh" size={16} class={syncing === a.id || syncing === 'all' ? 'spinning' : undefined} />
+                      <span class="sync-label">{syncing === a.id || syncing === 'all' ? 'Syncing…' : 'Sync'}</span>
+                    </button>
                   )}
                   <button type="button" class="btn btn-ghost btn-small btn-danger" onClick={() => disconnect(a)}>
                     Disconnect

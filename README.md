@@ -285,6 +285,7 @@ never sees passwords. Code: `server/src/mail/` (`gmail.js` and `graph.js` are tw
 | GET    | `/api/mail/accounts`                  | Accounts with status, last sync, unread and starred counts          |
 | DELETE | `/api/mail/accounts/:id`              | Revokes access (Google), deletes the account and its synced mail    |
 | POST   | `/api/mail/sync`                      | Sync now                                                            |
+| POST   | `/api/mail/accounts/:id/sync`         | Sync one account now (skipped if it synced in the last 20 seconds)  |
 | GET    | `/api/mail/messages`                  | `?view=inbox\|starred&account=<id>&before=<receivedAt>`, 50 at a time |
 | GET    | `/api/mail/messages/:id`              | One mail's details                                                  |
 | GET    | `/api/mail/messages/:id/body`         | The body as a sandboxed page (`?images=1` allows remote images)     |

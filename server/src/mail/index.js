@@ -246,6 +246,11 @@ export function createMail(db, { config, now = () => new Date(), providers } = {
     }
   }
 
+  // Manual syncs are skipped this soon after the last one, so tapping sync again and again can't burn the Gmail quota.
+  function justSynced(account) {
+    return account.last_synced_at && account.last_synced_at > new Date(now().getTime() - 20_000).toISOString();
+  }
+
   function accountsOf(userId) {
     const counts = Object.fromEntries(q.counts.all(userId).map((c) => [c.id, c]));
     return q.accounts.all(userId).map((a) => accountJson(a, providers[a.provider]?.label, counts[a.id]));
@@ -313,12 +318,21 @@ export function createMail(db, { config, now = () => new Date(), providers } = {
 
     /** "Sync now" for one user's accounts (skips ones synced in the last 20 seconds). */
     async syncUser(userId) {
-      const recent = new Date(now().getTime() - 20_000).toISOString();
       for (const account of q.accounts.all(userId)) {
-        if (account.status !== 'ok' || (account.last_synced_at && account.last_synced_at > recent)) continue;
+        if (account.status !== 'ok' || justSynced(account)) continue;
         await syncAccount(account);
       }
       return accountsOf(userId);
+    },
+
+    /** "Sync" on one account. result: { ok, error?, needsReconnect?, skipped? }; skipped when synced in the last 20 seconds. */
+    async syncOne(userId, accountId) {
+      const account = owned(userId, accountId);
+      let result;
+      if (account.status !== 'ok') result = { ok: false, needsReconnect: true };
+      else if (justSynced(account)) result = { ok: true, skipped: true };
+      else result = await syncAccount(account);
+      return { result, accounts: accountsOf(userId) };
     },
 
     /** Called every minute by the job timer: syncs accounts whose last sync is 5 minutes old or more. */

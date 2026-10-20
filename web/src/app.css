@@ -1046,6 +1046,30 @@ a:focus-visible {
   color: var(--red-text);
 }
 
+/* The refresh icon turns while a sync runs (reduced motion stops it; "Syncing…" still says so). */
+.spinning {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* On a phone, an account's Sync button is just the icon, so the address keeps its room. */
+@media (max-width: 480px) {
+  .account-sync {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .account-sync .sync-label {
+    display: none;
+  }
+}
+
 .icon-btn.is-set {
   color: var(--red-text);
 }
@@ -1394,5 +1418,9 @@ body:has(.login-page)::before {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+  /* An endless animation at 0.01ms would flicker; just hold still. */
+  .spinning {
+    animation: none;
   }
 }

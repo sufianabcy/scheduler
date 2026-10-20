@@ -70,6 +70,11 @@ export function mailRoutes({ db, mail, now }) {
     res.json({ accounts: await mail.syncUser(req.user.id) });
   });
 
+  // "Sync" on one account, from the accounts page.
+  router.post('/accounts/:id/sync', async (req, res) => {
+    res.json(await mail.syncOne(req.user.id, v.pathId(req.params.id)));
+  });
+
   // ?view=inbox|starred&account=<id>&before=<receivedAt of the last mail shown>
   router.get('/messages', (req, res) => {
     const view = req.query.view ?? 'inbox';
