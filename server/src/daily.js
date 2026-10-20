@@ -32,8 +32,6 @@ const taskJson = (t) => ({
   priority: t.priority,
   // A task made from a mail: messageId while the mail is still synced, link to open it at Gmail/Outlook.
   mail: t.mail_message_id !== null || t.mail_link !== null ? { messageId: t.mail_message_id, link: t.mail_link } : null,
-  // A task made from LMS work: its LMS status (done once submitted there), due time (UTC ISO), course and link.
-  lms: t.lms_id ? { itemId: t.lms_id, status: t.lms_status, dueAt: t.lms_due_at, course: t.lms_course, url: t.lms_url } : null,
   doneAt: t.done_at,
 });
 
@@ -61,10 +59,8 @@ const BY_PRIORITY = 'coalesce(t.priority, 4)';
 
 const TASK_WITH_RULE = `
   SELECT t.*, r.freq AS r_freq, r.every AS r_every, r.weekdays AS r_weekdays,
-         r.start_day AS r_start_day, r.end_day AS r_end_day,
-         li.id AS lms_id, li.status AS lms_status, li.due_at AS lms_due_at, li.course_name AS lms_course, li.url AS lms_url
-  FROM daily_tasks t LEFT JOIN repeating_tasks r ON r.id = t.repeating_task_id
-  LEFT JOIN lms_items li ON li.task_id = t.id`;
+         r.start_day AS r_start_day, r.end_day AS r_end_day
+  FROM daily_tasks t LEFT JOIN repeating_tasks r ON r.id = t.repeating_task_id`;
 
 /**
  * The daily plan: one checklist per day, repeating tasks, reminders, and the Unfinished list.

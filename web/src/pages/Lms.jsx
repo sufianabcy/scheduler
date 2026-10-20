@@ -188,7 +188,7 @@ export function Lms() {
     }
   };
   const disconnect = async () => {
-    if (!confirm('Disconnect the LMS? Its synced deadlines are removed from the app; tasks made from them stay as plain tasks.')) return;
+    if (!confirm('Disconnect the LMS? Its synced deadlines are removed from the app.')) return;
     if ((await attempt(post('/lms/disconnect'))) !== undefined) reload();
   };
 

@@ -10,14 +10,15 @@ import { ago } from '../mailFormat.js';
 import { ItemRow } from './Lms.jsx';
 
 /**
- * The LMS on the home page: what's open, overdue and missed, and the next few pieces of work coming up.
- * Overdue work itself is in the red list at the top. Shown only when the LMS is switched on for this server.
+ * The LMS on the home page, the one place LMS work shows outside the LMS tab (it isn't put on the plan as tasks):
+ * counts, all overdue work, then the next few pieces coming up. Shown only when the LMS is switched on for this server.
  */
 function LmsSection({ lms }) {
   if (!lms?.enabled) return null;
   const c = lms.counts;
+  const overdue = lms.overdue ?? [];
   return (
-    <section class="section card" aria-labelledby="lms-title">
+    <section class={`section card${overdue.length ? ' lms-overdue' : ''}`} aria-labelledby="lms-title">
       <div class="section-head">
         <h2 class="section-title" id="lms-title">
           LMS
@@ -40,10 +41,10 @@ function LmsSection({ lms }) {
             </a>
           </div>
           <ul class="list">
-            {lms.upcoming.map((item) => (
+            {[...overdue, ...lms.upcoming].map((item) => (
               <ItemRow key={item.id} item={item} />
             ))}
-            {lms.upcoming.length === 0 && <li class="empty">Nothing coming up.</li>}
+            {overdue.length + lms.upcoming.length === 0 && <li class="empty">Nothing due.</li>}
           </ul>
           <div class="small muted lms-synced">{lms.needsReconnect ? 'Not updating: reconnect the LMS' : `Synced ${ago(lms.lastSyncedAt)}`}</div>
         </>
@@ -166,9 +167,6 @@ export function Today() {
 
   if (!data) return error ? <LoadError error={error} retry={reload} /> : <Loading />;
 
-  // LMS work that's overdue gets its own red list at the top; the rest of today's tasks stay in Today.
-  const lmsOverdue = data.tasks.filter((t) => t.lms?.status === 'overdue' && t.status !== 'done');
-  const ownTasks = data.tasks.filter((t) => !lmsOverdue.includes(t));
   // Today's progress: ticked tasks out of everything on today's list (dated goal tasks count as not done yet).
   const doneCount = data.tasks.filter((t) => t.status === 'done').length;
   const total = data.tasks.length + data.goalTasksDue.length;
@@ -205,24 +203,6 @@ export function Today() {
       {/* Two columns on wide screens: today's list on the left, goals and projects beside it. */}
       <div class="dash">
         <div class="dash-main">
-          {lmsOverdue.length > 0 && (
-            <section class="section card lms-overdue" aria-labelledby="overdue-title">
-              <div class="section-head">
-                <h2 class="section-title" id="overdue-title">
-                  Overdue on the LMS <span class="badge badge-red">{lmsOverdue.length}</span>
-                </h2>
-                <a class="section-link" href="#/lms">
-                  LMS
-                </a>
-              </div>
-              <ul class="list">
-                {lmsOverdue.map((task) => (
-                  <TaskRow key={task.id} task={task} onChanged={reload} />
-                ))}
-              </ul>
-            </section>
-          )}
-
           <section class="section card" aria-labelledby="today-title">
             <div class="section-head">
               <h2 class="section-title" id="today-title">
@@ -236,10 +216,10 @@ export function Today() {
               {data.goalTasksDue.map((item) => (
                 <GoalTaskRow key={`g${item.taskId}`} item={item} onChanged={reload} />
               ))}
-              {ownTasks.map((task) => (
+              {data.tasks.map((task) => (
                 <TaskRow key={task.id} task={task} onChanged={reload} />
               ))}
-              {ownTasks.length === 0 && data.goalTasksDue.length === 0 && (
+              {data.tasks.length === 0 && data.goalTasksDue.length === 0 && (
                 <li class="empty">Nothing planned yet. Add your first task below.</li>
               )}
             </ul>

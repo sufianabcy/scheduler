@@ -23,7 +23,7 @@ describe('database', () => {
     ]) {
       assert.ok(tables.includes(name), `missing table ${name}`);
     }
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9);
     assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
     db.close();
   });
@@ -34,8 +34,32 @@ describe('database', () => {
       const path = join(dir, 'data', 'planner.db');
       openDb(path).close();
       const db = openDb(path);
-      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 8);
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9);
       assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'wal');
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('migration 9 takes the tasks made from LMS work off the plan, and only those', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'planner-'));
+    try {
+      const path = join(dir, 'planner.db');
+      let db = openDb(path);
+      const userId = (await createUser(db, 'peter@example.test', randomPassword())).id;
+      const add = (title) => Number(db.prepare("INSERT INTO daily_tasks (user_id, title, day, position) VALUES (?, ?, '2026-10-20', 0)").run(userId, title).lastInsertRowid);
+      const lab = add('Lab report 3');
+      add('Gym');
+      db.prepare("INSERT INTO lms_courses (user_id, course_id, name) VALUES (?, 101, 'Stats')").run(userId);
+      db.prepare(`INSERT INTO lms_items (user_id, id, course_id, course_name, kind, title, status, task_id, task_made, last_seen_at)
+        VALUES (?, 'assign:503', 101, 'Stats', 'assign', 'Lab report 3', 'overdue', ?, 1, '2026-10-20T04:00:00Z')`).run(userId, lab);
+      db.exec('PRAGMA user_version = 8');
+      db.close();
+
+      db = openDb(path);
+      assert.deepEqual(db.prepare('SELECT title FROM daily_tasks').all().map((r) => r.title), ['Gym']);
+      assert.deepEqual({ ...db.prepare('SELECT task_id, task_made FROM lms_items').get() }, { task_id: null, task_made: 0 });
       db.close();
     } finally {
       rmSync(dir, { recursive: true, force: true });

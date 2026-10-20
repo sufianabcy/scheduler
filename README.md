@@ -93,7 +93,7 @@ switched with the Day / Goals / Projects tabs at the top of each (`web/src/compo
 
 | Tab   | Screen   | Route                     | What it does                                                      |
 |-------|----------|---------------------------|-------------------------------------------------------------------|
-| Today | Today    | `#/`                      | Today's checklist, overdue LMS work, Unfinished list, LMS card, goal and project cards |
+| Today | Today    | `#/`                      | Today's checklist, Unfinished list, LMS card (overdue first), goal and project cards |
 | Plan  | Day      | `#/plan`, `#/plan/<day>`  | Any day's checklist; opens on tomorrow from 6 PM                  |
 | Plan  | Goals    | `#/goals`, `#/goals/<id>` | Monthly goals by month; ordered tasks with optional dates         |
 | Plan  | Projects | `#/projects`, `#/projects/<id>` | Steps that unlock one by one, checklists, templates         |
@@ -309,14 +309,13 @@ to Moodle, `index.js` syncs). No web pages are scraped.
   in progress, the Dashboard timeline (`core_calendar_get_action_events_by_timesort`, which still lists overdue work),
   assignment and quiz lists (once a day per course), then submission status or quiz attempts only for work that isn't
   done yet. Functions the LMS doesn't allow are skipped and listed on the LMS screen.
-- **Status:** upcoming (due later); overdue (due date passed, still accepted until the cut-off), shown in red at the
-  top of Today; missed (cut-off or quiz close passed, nothing handed in), listed by course under Missed; done
+- **Status:** upcoming (due later); overdue (due date passed, still accepted until the cut-off), listed first in red
+  in Today's LMS card; missed (cut-off or quiz close passed, nothing handed in), listed by course under Missed; done
   (submitted or attempted). Work only known from the timeline counts as done once it drops off it, or missed if its
   cut-off passed.
-- **Tasks:** each upcoming or overdue item gets one planner task on its due day (overdue ones on today; at midnight they
-  move to today instead of going to Unfinished). Submitting on the LMS ticks the task by itself. A task you delete
-  isn't made again, one you tick stays ticked, and one you move to today or a later day stays there. Hiding a course
-  takes its open tasks off the plan; showing it brings those back.
+- **Not on the plan:** LMS work is shown only in Today's LMS card and the LMS tab, never copied onto the plan as
+  tasks (it used to be, and showed twice). Migration 009 removed those tasks. Hiding a course takes its work off the
+  card.
 - **Notifications:** 23:00 adds "Due tomorrow" and "Still overdue: N" (and is sent even if you planned tomorrow, when
   there's something to say); 06:00 adds what's due today; one notification when work becomes missed; one when the
   sign-in stops working ("Reconnect LMS", also a banner on Today).
@@ -326,15 +325,15 @@ to Moodle, `index.js` syncs). No web pages are scraped.
 |--------|--------------------------|--------------------------------------------------------------------------------|
 | GET    | `/api/lms/status`        | Connected or not, last sync and error, counts, semester start, missing functions |
 | POST   | `/api/lms/connect`       | `{ username, password }`; 5 wrong passwords in 15 minutes blocks it for the rest of that window |
-| POST   | `/api/lms/disconnect`    | Forgets the token and synced work; tasks stay as plain tasks                     |
+| POST   | `/api/lms/disconnect`    | Forgets the token and synced work                                                |
 | POST   | `/api/lms/sync`          | Sync now; `{ auto: true }` syncs in the background at most every 10 minutes     |
 | PATCH  | `/api/lms/settings`      | `{ semesterStart: 'YYYY-MM-DD' \| null }`                                         |
 | GET    | `/api/lms/items`         | `?status=open\|upcoming\|overdue\|missed\|done\|all` (default open)                 |
 | GET    | `/api/lms/courses`       | Courses with open and missed counts, linked project, hidden                      |
 | PATCH  | `/api/lms/courses/:id`   | `{ projectId?: id \| null, hidden? }`                                             |
 
-Today has an LMS card (counts, the next 5 deadlines, last sync); `/api/today` returns it as `lms`. Tasks made from LMS
-work carry `lms: { itemId, status, dueAt, course, url }`. Times from the LMS are stored as UTC
+Today has an LMS card (counts, all overdue work, the next 5 deadlines, last sync); `/api/today` returns it as `lms`
+(`{ enabled, connected, needsReconnect, lastSyncedAt, counts, overdue, upcoming }`). Times from the LMS are stored as UTC
 ISO and shown in IST. Tests use a stand-in Moodle (`server/test/fake-lms.js`) answering from JSON files in
 `server/test/fixtures/lms/`, written in Moodle's response format with made-up names and ids (nothing recorded from the
 real account).

@@ -62,7 +62,6 @@ async function setup({ tokenKey = randomBytes(32).toString('base64') } = {}) {
   };
   const items = async (status = 'all') => (await api('GET', `/api/lms/items?status=${status}`)).body.items;
   const byId = async () => Object.fromEntries((await items()).map((i) => [i.id, i]));
-  const lmsTasks = (rows) => rows.filter((task) => task.lms);
   return {
     fake,
     t,
@@ -73,7 +72,6 @@ async function setup({ tokenKey = randomBytes(32).toString('base64') } = {}) {
     connect,
     items,
     byId,
-    lmsTasks,
     async close() {
       console.error = original.error;
       console.log = original.log;
@@ -184,30 +182,25 @@ describe('sync', () => {
     assert.ok(status.lastSyncedAt);
   });
 
-  test('upcoming and overdue work becomes planner tasks on its due day; overdue work on today', async () => {
+  test('LMS work stays off the plan: Today lists it once, in the LMS card', async () => {
     env = await setup();
     await env.connect();
     const today = (await env.api('GET', '/api/today')).body;
-    const tasks = env.lmsTasks(today.tasks);
-    assert.deepEqual(tasks.map((task) => [task.title, task.lms.status]).sort(), [['Lab report 3', 'overdue'], ['Tree traversal', 'upcoming']]);
-    const lab = tasks.find((task) => task.title === 'Lab report 3');
-    assert.equal(lab.lms.course, 'Probability & Statistics');
-    assert.match(lab.lms.url, /\/mod\/assign\/view\.php\?id=503$/);
+    assert.deepEqual(today.tasks, []);
+    assert.equal(env.t.db.prepare('SELECT count(*) AS n FROM daily_tasks').get().n, 0);
+    for (const day of ['2026-10-21', '2026-10-22', '2026-10-23']) {
+      assert.deepEqual((await env.api('GET', `/api/days/${day}`)).body.tasks, [], day);
+    }
     assert.equal(today.lms.connected, true);
     assert.equal(today.lms.needsReconnect, false);
-
-    const tomorrow = env.lmsTasks((await env.api('GET', '/api/days/2026-10-21')).body.tasks);
-    assert.deepEqual(tomorrow.map((task) => task.title), ['Linked list exercise']);
-    assert.deepEqual(env.lmsTasks((await env.api('GET', '/api/days/2026-10-22')).body.tasks).map((task) => task.title), ['Quiz 2']);
-    assert.deepEqual(env.lmsTasks((await env.api('GET', '/api/days/2026-10-23')).body.tasks).map((task) => task.title), ['Week 9 discussion']);
-
-    // Syncing again doesn't make the tasks twice.
-    env.clock.now = at('2026-10-20T11:00:00+05:30');
-    await env.api('POST', '/api/lms/sync');
-    assert.equal(env.t.db.prepare('SELECT count(*) AS n FROM daily_tasks').get().n, 5);
+    assert.deepEqual(today.lms.overdue.map((i) => i.title), ['Lab report 3']);
+    const lab = today.lms.overdue[0];
+    assert.equal(lab.course, 'Probability & Statistics');
+    assert.match(lab.url, /\/mod\/assign\/view\.php\?id=503$/);
+    assert.equal(today.lms.upcoming[0].title, 'Tree traversal');
   });
 
-  test('a submission on the LMS ticks the task by itself', async () => {
+  test('a submission on the LMS takes the work off Today by itself', async () => {
     env = await setup();
     await env.connect();
     env.fake.state.submissions['13'] = { lastattempt: { submission: { status: 'submitted', timemodified: 1792473000 } }, warnings: [] };
@@ -216,10 +209,8 @@ describe('sync', () => {
     const res = await env.api('POST', '/api/lms/sync');
     assert.equal(res.status, 200);
     assert.equal(res.body.counts.done, 3);
-
-    const lab = env.lmsTasks((await env.api('GET', '/api/today')).body.tasks).find((task) => task.title === 'Lab report 3');
-    assert.equal(lab.status, 'done');
-    assert.equal(lab.lms.status, 'done');
+    assert.equal((await env.byId())['assign:503'].status, 'done');
+    assert.deepEqual((await env.api('GET', '/api/today')).body.lms.overdue, []);
   });
 
   test('the second sync on a day reuses the course lists and only checks work that is still open', async () => {
@@ -278,21 +269,18 @@ describe('sync', () => {
     assert.equal(syncs(), first + 1);
   });
 
-  test('overdue tasks move to today at midnight instead of going to Unfinished', async () => {
+  test('overdue work stays on Today until its cut-off, and never lands in Unfinished', async () => {
     env = await setup();
     await env.connect();
     // Tree traversal was due at 18:00 on the 20th; its cut-off is a week later.
     env.clock.now = at('2026-10-21T09:00:00+05:30');
     const today = (await env.api('GET', '/api/today')).body;
     assert.equal(today.day, '2026-10-21');
-    const tree = env.lmsTasks(today.tasks).find((task) => task.title === 'Tree traversal');
-    assert.equal(tree.day, '2026-10-21');
-    assert.equal(tree.status, 'open');
-    assert.equal(tree.lms.status, 'overdue');
-    assert.ok(!today.unfinished.some((task) => task.lms));
+    assert.deepEqual(today.lms.overdue.map((i) => i.title).sort(), ['Lab report 3', 'Tree traversal']);
+    assert.deepEqual(today.unfinished, []);
   });
 
-  test('work whose cut-off passes becomes missed: its task goes and one notification is sent', async () => {
+  test('work whose cut-off passes becomes missed: it leaves Today and one notification is sent', async () => {
     env = await setup();
     await env.connect();
     env.clock.now = at('2026-10-24T12:00:00+05:30');
@@ -304,25 +292,13 @@ describe('sync', () => {
     assert.equal(env.pushes.length, 1);
     assert.equal(env.pushes[0].title, 'Missed on LMS: 2 items');
     assert.equal(env.pushes[0].url, '/#/lms/missed');
-    const titles = env.t.db.prepare("SELECT title FROM daily_tasks WHERE status IN ('open', 'unfinished')").all().map((r) => r.title);
-    assert.ok(!titles.includes('Lab report 3'));
-    assert.ok(!titles.includes('Quiz 2'));
+    const overdue = (await env.api('GET', '/api/today')).body.lms.overdue.map((i) => i.title);
+    assert.ok(!overdue.includes('Lab report 3') && !overdue.includes('Quiz 2'));
 
     // Not sent again on the next sync.
     env.clock.now = at('2026-10-24T15:00:00+05:30');
     await env.api('POST', '/api/lms/sync');
     assert.equal(env.pushes.length, 1);
-  });
-
-  test('a task you delete is not made again', async () => {
-    env = await setup();
-    await env.connect();
-    const forum = env.lmsTasks((await env.api('GET', '/api/days/2026-10-23')).body.tasks)[0];
-    assert.equal((await env.api('DELETE', `/api/tasks/${forum.id}`)).status, 204);
-    env.clock.now = at('2026-10-20T11:00:00+05:30');
-    await env.api('POST', '/api/lms/sync');
-    assert.equal(env.lmsTasks((await env.api('GET', '/api/days/2026-10-23')).body.tasks).length, 0);
-    assert.equal((await env.byId())['forum:801'].status, 'upcoming');
   });
 
   test('a calendar-only activity that drops off the timeline counts as done', async () => {
@@ -343,8 +319,7 @@ describe('sync', () => {
     assert.equal((await env.byId())['forum:801'].status, 'done');
     // Still done after the statuses are worked out again (the bug: it flipped back to overdue here).
     assert.equal((await env.byId())['forum:801'].status, 'done');
-    const today = (await env.api('GET', '/api/today')).body.tasks;
-    assert.ok(!today.some((task) => task.lms?.itemId === 'forum:801' && task.lms.status === 'overdue'));
+    assert.ok(!(await env.api('GET', '/api/today')).body.lms.overdue.some((i) => i.id === 'forum:801'));
   });
 
   test('calendar-only work whose cut-off passed while off the timeline stays missed', async () => {
@@ -360,7 +335,7 @@ describe('sync', () => {
     assert.equal((await env.byId())['quiz:702'].status, 'missed');
   });
 
-  test('the Today page gets an LMS summary: counts, the next upcoming work, last sync', async () => {
+  test('the Today page gets an LMS summary: counts, overdue work, the next upcoming work, last sync', async () => {
     env = await setup();
     let lms = (await env.api('GET', '/api/today')).body.lms;
     assert.deepEqual(lms, { enabled: true, connected: false, needsReconnect: false });
@@ -373,22 +348,8 @@ describe('sync', () => {
     assert.ok(lms.lastSyncedAt);
     const upcoming = await env.items('upcoming');
     assert.deepEqual(lms.upcoming.map((i) => i.id), upcoming.slice(0, 5).map((i) => i.id));
+    assert.deepEqual(lms.overdue.map((i) => i.id), (await env.items('overdue')).map((i) => i.id));
     assert.ok(lms.upcoming.every((i, n) => n === 0 || lms.upcoming[n - 1].dueAt <= i.dueAt));
-  });
-
-  test('a task you move to another day stays there', async () => {
-    env = await setup();
-    await env.connect();
-    const quiz = (await env.byId())['quiz:702'];
-    const task = () => env.t.db.prepare('SELECT day FROM daily_tasks WHERE id = ?').get(quiz.taskId).day;
-    assert.equal(task(), '2026-10-22'); // its due day
-    await env.api('PATCH', `/api/tasks/${quiz.taskId}`, { day: '2026-10-21' }); // do it a day early
-    env.clock.now = at('2026-10-20T11:00:00+05:30');
-    await env.api('POST', '/api/lms/sync');
-    assert.equal(task(), '2026-10-21');
-    env.clock.now = at('2026-10-20T13:30:00+05:30');
-    await env.t.lms.runDue();
-    assert.equal(task(), '2026-10-21');
   });
 
   test('one activity the LMS refuses does not ask you to reconnect', async () => {
@@ -461,11 +422,10 @@ describe('sync', () => {
     await env.t.lms.runDue();
     assert.equal(env.pushes.length, 1);
 
-    // Connecting again keeps the synced work and tasks.
+    // Connecting again keeps the synced work.
     const again = await env.connect();
     assert.equal(again.body.status, 'ok');
     assert.equal((await env.items()).length, 8);
-    assert.equal(env.t.db.prepare('SELECT count(*) AS n FROM daily_tasks').get().n, 5);
   });
 
   test('an LMS that is down records the error and keeps what was synced', async () => {
@@ -482,34 +442,21 @@ describe('sync', () => {
 });
 
 describe('courses', () => {
-  test('hiding a course takes its open tasks off the plan; showing it brings them back', async () => {
+  test("hiding a course takes its work off Today's LMS card; showing it brings it back", async () => {
     env = await setup();
     await env.connect();
     const courses = (await env.api('GET', '/api/lms/courses')).body.courses;
     assert.deepEqual(courses.map((c) => [c.id, c.name, c.open, c.missed]), [[102, 'Data Structures', 3, 0], [101, 'Probability & Statistics', 2, 1]]);
+    const upcomingTitles = async () => (await env.api('GET', '/api/today')).body.lms.upcoming.map((i) => i.title);
+    assert.ok((await upcomingTitles()).includes('Tree traversal'));
 
     const hidden = await env.api('PATCH', '/api/lms/courses/102', { hidden: true });
     assert.equal(hidden.body.hidden, true);
-    assert.deepEqual(env.lmsTasks((await env.api('GET', '/api/today')).body.tasks).map((task) => task.title), ['Lab report 3']);
+    assert.ok(!(await upcomingTitles()).includes('Tree traversal'));
     assert.ok((await env.items()).every((i) => i.courseId !== 102));
 
     await env.api('PATCH', '/api/lms/courses/102', { hidden: false });
-    assert.deepEqual(env.lmsTasks((await env.api('GET', '/api/today')).body.tasks).map((task) => task.title).sort(), ['Lab report 3', 'Tree traversal']);
-  });
-
-  test('a task you deleted stays deleted after hiding and showing its course', async () => {
-    env = await setup();
-    await env.connect();
-    const todayLms = async () => env.lmsTasks((await env.api('GET', '/api/today')).body.tasks);
-    const tree = (await todayLms()).find((task) => task.title === 'Tree traversal');
-    await env.api('DELETE', `/api/tasks/${tree.id}`);
-    await env.api('PATCH', '/api/lms/courses/102', { hidden: true });
-    await env.api('PATCH', '/api/lms/courses/102', { hidden: false });
-    assert.deepEqual((await todayLms()).map((task) => task.title), ['Lab report 3']);
-    const items = await env.byId();
-    assert.equal(items[tree.lms.itemId].taskId, null);
-    // The course's other tasks, which hiding took off the plan, are back.
-    assert.ok(items['quiz:702'].taskId);
+    assert.ok((await upcomingTitles()).includes('Tree traversal'));
   });
 
   test('a course can be linked to one of your projects', async () => {
@@ -537,16 +484,14 @@ describe('courses', () => {
     assert.equal(env.fake.callsOf('mod_assign_get_assignments').length, 2);
   });
 
-  test('disconnecting forgets the token and the synced work; tasks stay as plain tasks', async () => {
+  test('disconnecting forgets the token and the synced work', async () => {
     env = await setup();
     await env.connect();
     assert.equal((await env.api('POST', '/api/lms/disconnect')).status, 204);
     assert.equal((await env.api('GET', '/api/lms/status')).body.connected, false);
     assert.equal(env.t.db.prepare('SELECT count(*) AS n FROM lms_items').get().n, 0);
     assert.equal(env.t.db.prepare('SELECT count(*) AS n FROM lms_accounts').get().n, 0);
-    const today = (await env.api('GET', '/api/today')).body;
-    assert.equal(today.tasks.length, 2);
-    assert.ok(today.tasks.every((task) => task.lms === null));
+    assert.equal((await env.api('GET', '/api/today')).body.lms.connected, false);
   });
 });
 

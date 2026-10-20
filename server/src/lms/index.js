@@ -14,7 +14,7 @@ export const LOOKBACK_DAYS = 180;
 const EVENTS_PAGE = 50;
 const MAX_EVENT_PAGES = 20;
 const OPEN = ['upcoming', 'overdue'];
-// How many pieces of upcoming work the Today page lists.
+// How many pieces of upcoming work the Today page lists (overdue work is always listed in full).
 const TODAY_UPCOMING = 5;
 // Activities whose submission or attempts can be looked up; anything else is followed through the calendar only.
 const CHECKED_KINDS = { assign: 'mod_assign_get_submission_status', quiz: 'mod_quiz_get_user_attempts' };
@@ -65,7 +65,6 @@ const itemJson = (i) => ({
   status: i.status,
   submittedAt: i.submitted_at,
   grade: i.grade,
-  taskId: i.task_id,
 });
 
 const courseJson = (c) => ({
@@ -81,7 +80,7 @@ const courseJson = (c) => ({
 /**
  * KL University LMS (Moodle): signs in once with the user's LMS username and password to get a web-service token
  * (only the token is kept, encrypted), then syncs what's due: upcoming, overdue and missed work, and what's done.
- * Upcoming and overdue work gets a planner task on its due day, ticked by itself once it's submitted.
+ * The work is shown in the LMS card on Today and in the LMS tab; it is not copied onto the plan as tasks.
  * Switched off (`enabled` false) until LMS_TOKEN_KEY is set. `client` and `push` can be swapped in tests.
  */
 export function createLms(db, { config, now = () => new Date(), client, push = null } = {}) {
@@ -172,30 +171,6 @@ export function createLms(db, { config, now = () => new Date(), client, push = n
       WHERE i.user_id = ? AND c.hidden = 0 AND i.status IN ('upcoming', 'overdue') AND i.due_at >= ? AND i.due_at < ?
       ORDER BY i.due_at`),
 
-    // Planner tasks for upcoming and overdue work.
-    needTasks: db.prepare(`
-      SELECT i.* FROM lms_items i JOIN lms_courses c ON c.user_id = i.user_id AND c.course_id = i.course_id
-      WHERE i.user_id = ? AND c.hidden = 0 AND i.status IN ('upcoming', 'overdue') AND i.task_made = 0 AND i.due_at IS NOT NULL`),
-    insertTask: db.prepare(`
-      INSERT INTO daily_tasks (user_id, title, day, position)
-      VALUES (?, ?, ?, (SELECT coalesce(max(position), -1) + 1 FROM daily_tasks WHERE user_id = ? AND day = ?))`),
-    linkTask: db.prepare('UPDATE lms_items SET task_id = ?, task_made = 1 WHERE user_id = ? AND id = ?'),
-    linkedTasks: db.prepare(`
-      SELECT i.id, i.status, i.due_at, t.id AS task_id, t.day, t.status AS task_status
-      FROM lms_items i JOIN daily_tasks t ON t.id = i.task_id
-      WHERE i.user_id = ? AND t.status IN ('open', 'unfinished')`),
-    taskDone: db.prepare(`UPDATE daily_tasks SET status = 'done', done_at = datetime('now'), day = max(day, ?) WHERE id = ?`),
-    taskMove: db.prepare(`UPDATE daily_tasks SET day = ?, status = 'open', reminded_at = NULL WHERE id = ?`),
-    removeTask: db.prepare('DELETE FROM daily_tasks WHERE id = ?'),
-    // Hiding a course takes its open tasks off the plan; showing it again brings back those tasks (and only those:
-    // a task you deleted yourself stays deleted). task_made = 2 marks "taken off by hiding".
-    markHiddenTasks: db.prepare(`
-      UPDATE lms_items SET task_made = 2 WHERE user_id = ? AND course_id = ?
-        AND task_id IN (SELECT id FROM daily_tasks WHERE status IN ('open', 'unfinished'))`),
-    hideTasks: db.prepare(`
-      DELETE FROM daily_tasks WHERE status IN ('open', 'unfinished')
-        AND id IN (SELECT task_id FROM lms_items WHERE user_id = ? AND course_id = ? AND task_id IS NOT NULL)`),
-    resetTaskMade: db.prepare(`UPDATE lms_items SET task_made = 0 WHERE user_id = ? AND course_id = ? AND task_made = 2`),
   };
 
   const nowIso = () => now().toISOString();
@@ -371,28 +346,6 @@ export function createLms(db, { config, now = () => new Date(), client, push = n
     return { done: finished.length > 0, submittedAt: last ? fromSeconds(last.timefinish) : null, grade: null, due: null, cutoff: null };
   }
 
-  /**
-   * Makes, moves, ticks or removes planner tasks to match the LMS. A task the user ticked is never unticked, and one
-   * they moved to today or a later day stays there: only tasks left on a past day (or in Unfinished) are moved.
-   */
-  function syncTasks(userId) {
-    const today = dayOf(now());
-    for (const item of q.needTasks.all(userId)) {
-      const dueDay = dayOf(new Date(item.due_at));
-      const day = dueDay < today ? today : dueDay;
-      const { lastInsertRowid } = q.insertTask.run(userId, item.title.slice(0, 200), day, userId, day);
-      q.linkTask.run(Number(lastInsertRowid), userId, item.id);
-    }
-    for (const t of q.linkedTasks.all(userId)) {
-      if (t.status === 'done') q.taskDone.run(today, t.task_id);
-      else if (t.status === 'missed') q.removeTask.run(t.task_id);
-      else if (t.day < today || t.task_status !== 'open') {
-        const dueDay = dayOf(new Date(t.due_at));
-        q.taskMove.run(t.status === 'overdue' || dueDay < today ? today : dueDay, t.task_id);
-      }
-    }
-  }
-
   async function runSync(userId) {
     const account = q.account.get(userId);
     if (!account || account.status !== 'ok') return { ok: false };
@@ -527,7 +480,6 @@ export function createLms(db, { config, now = () => new Date(), client, push = n
           }
         }
         recompute(userId);
-        syncTasks(userId);
         const missed = q.newlyMissed.all(userId);
         q.markMissedSent.run(userId);
         q.synced.run(nowIso(), userId);
@@ -604,7 +556,7 @@ export function createLms(db, { config, now = () => new Date(), client, push = n
       return status(userId);
     },
 
-    /** Forgets the token and everything synced. Planner tasks made from the LMS stay, as plain tasks. */
+    /** Forgets the token and everything synced. */
     disconnect(userId) {
       owned(userId);
       transaction(db, () => {
@@ -665,17 +617,7 @@ export function createLms(db, { config, now = () => new Date(), client, push = n
       if (!course) throw notFound('No such course');
       if (projectId !== undefined && projectId !== null && !q.project.get(projectId, userId)) throw notFound('No such project');
       const nextHidden = hidden === undefined ? course.hidden : Number(hidden);
-      transaction(db, () => {
-        q.updateCourse.run(projectId === undefined ? course.project_id : projectId, nextHidden, userId, courseId);
-        if (nextHidden === 1 && course.hidden === 0) {
-          q.markHiddenTasks.run(userId, courseId);
-          q.hideTasks.run(userId, courseId);
-        }
-        if (nextHidden === 0 && course.hidden === 1) {
-          q.resetTaskMade.run(userId, courseId);
-          syncTasks(userId);
-        }
-      });
+      q.updateCourse.run(projectId === undefined ? course.project_id : projectId, nextHidden, userId, courseId);
       return courseJson(q.courses.all(userId).find((c) => c.course_id === courseId));
     },
 
@@ -690,8 +632,8 @@ export function createLms(db, { config, now = () => new Date(), client, push = n
     },
 
     /**
-     * For the Today page: whether to show the "Reconnect LMS" banner, and the LMS section: counts by status, the
-     * next few pieces of upcoming work, and when it last synced. Call recompute first.
+     * For the Today page: whether to show the "Reconnect LMS" banner, and the LMS section: counts by status, all
+     * overdue work, the next few pieces of upcoming work, and when it last synced. Call recompute first.
      */
     summary(userId) {
       const account = q.account.get(userId);
@@ -703,6 +645,7 @@ export function createLms(db, { config, now = () => new Date(), client, push = n
         needsReconnect: account.status === 'needs_reconnect',
         lastSyncedAt: account.last_synced_at,
         counts: { upcoming: counts.upcoming ?? 0, overdue: counts.overdue ?? 0, missed: counts.missed ?? 0, done: counts.done ?? 0 },
+        overdue: q.items.all(userId, JSON.stringify(['overdue'])).map(itemJson),
         upcoming: q.items.all(userId, JSON.stringify(['upcoming'])).slice(0, TODAY_UPCOMING).map(itemJson),
       };
     },

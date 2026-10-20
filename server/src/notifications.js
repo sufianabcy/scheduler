@@ -28,8 +28,7 @@ export function createNotifier(db, { push, mail = null, lms = null, now = () => 
     users: db.prepare('SELECT DISTINCT user_id FROM push_subscriptions ORDER BY user_id'),
     plannedTasks: db.prepare(`
       SELECT count(*) AS n FROM daily_tasks
-      WHERE user_id = ? AND day = ? AND repeating_task_id IS NULL AND status = 'open'
-        AND id NOT IN (SELECT task_id FROM lms_items WHERE task_id IS NOT NULL)`),
+      WHERE user_id = ? AND day = ? AND repeating_task_id IS NULL AND status = 'open'`),
     hasRun: db.prepare('SELECT 1 FROM job_runs WHERE name = ? AND run_key = ?'),
     markRun: db.prepare('INSERT OR IGNORE INTO job_runs (name, run_key) VALUES (?, ?)'),
     dueReminders: db.prepare(`
