@@ -10,6 +10,7 @@ import { lmsRoutes } from './lms/routes.js';
 import { createMail } from './mail/index.js';
 import { mailRoutes } from './mail/routes.js';
 import { createPush, loadVapidKeys } from './push.js';
+import { adminRoutes } from './routes/admin.js';
 import { authRoutes } from './routes/auth.js';
 import { dailyRoutes } from './routes/daily.js';
 import { goalRoutes } from './routes/goals.js';
@@ -80,6 +81,7 @@ export function createApp({
 
   api.get('/health', (req, res) => res.json({ ok: true }));
   api.use('/auth', authRoutes({ db, sessions, config }));
+  api.use('/admin', adminRoutes({ db }));
   api.use('/projects', projectRoutes({ db }));
   api.use('/templates', templateRoutes({ db }));
   api.use('/goals', goalRoutes({ db, now }));

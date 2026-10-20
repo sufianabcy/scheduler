@@ -366,6 +366,7 @@ All commands below run on the server (`ssh -i ~/.ssh/planner-admin.pem ubuntu@13
 | List logins                      | `sudo planner-user list`                                   |
 | Change a password                | `sudo planner-user passwd you@example.com`                 |
 | Remove a login and its data      | `sudo planner-user remove someone@example.com --yes`       |
+| Let a login create accounts in the app (admin) | `sudo planner-user admin you@example.com` (`unadmin` takes it away) |
 | Back up right now                | `sudo systemctl start planner-backup`                      |
 | See backups on the server        | `sudo ls -l /var/lib/planner/backups`                      |
 | See backups in S3                | S3 console → your bucket → `planner/`                      |

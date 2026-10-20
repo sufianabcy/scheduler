@@ -57,7 +57,7 @@ describe('auth API', () => {
     const res = await login({ email: '  PETER@Example.test ', password });
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.deepEqual(Object.keys(body.user).sort(), ['email', 'id']);
+    assert.deepEqual(Object.keys(body.user).sort(), ['email', 'id', 'isAdmin']);
     assert.equal(body.user.email, email);
 
     const setCookie = res.headers.get('set-cookie');

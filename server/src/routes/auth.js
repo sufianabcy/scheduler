@@ -35,7 +35,7 @@ export function authRoutes({ db, sessions, config }) {
     limiter.reset(`email:${email}`);
     const token = sessions.create(user.id);
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions(config, sessions.lifetimeMs));
-    res.json({ user: { id: user.id, email: user.email } });
+    res.json({ user: { id: user.id, email: user.email, isAdmin: user.is_admin === 1 } });
   });
 
   router.post('/logout', (req, res) => {

@@ -42,6 +42,13 @@ export function requireAuth(req, res, next) {
   next();
 }
 
+/** For admin-only routes (managing login accounts). Checked on every request, so taking admin away works at once. */
+export function requireAdmin(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Not logged in' });
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Only an admin can do that' });
+  next();
+}
+
 /**
  * Changing requests must send JSON. Browsers can't send a cross-site JSON request without a CORS preflight,
  * which this server never approves, so together with the SameSite=Lax cookie this blocks CSRF.

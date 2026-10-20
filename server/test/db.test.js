@@ -23,7 +23,7 @@ describe('database', () => {
     ]) {
       assert.ok(tables.includes(name), `missing table ${name}`);
     }
-    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version, 10);
     assert.equal(db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
     db.close();
   });
@@ -34,7 +34,7 @@ describe('database', () => {
       const path = join(dir, 'data', 'planner.db');
       openDb(path).close();
       const db = openDb(path);
-      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 9);
+      assert.equal(db.prepare('PRAGMA user_version').get().user_version, 10);
       assert.equal(db.prepare('PRAGMA journal_mode').get().journal_mode, 'wal');
       db.close();
     } finally {
@@ -54,6 +54,7 @@ describe('database', () => {
       db.prepare("INSERT INTO lms_courses (user_id, course_id, name) VALUES (?, 101, 'Stats')").run(userId);
       db.prepare(`INSERT INTO lms_items (user_id, id, course_id, course_name, kind, title, status, task_id, task_made, last_seen_at)
         VALUES (?, 'assign:503', 101, 'Stats', 'assign', 'Lab report 3', 'overdue', ?, 1, '2026-10-20T04:00:00Z')`).run(userId, lab);
+      db.exec('ALTER TABLE users DROP COLUMN is_admin'); // back to how version 8 looked
       db.exec('PRAGMA user_version = 8');
       db.close();
 
@@ -103,7 +104,7 @@ describe('user command', () => {
       encoding: 'utf8',
     });
 
-  test('add, list, passwd and remove work, and the new user can log in', async () => {
+  test('add, list, admin, passwd and remove work, and the new user can log in', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'planner-'));
     const dbPath = join(dir, 'planner.db');
     const password = randomPassword();
@@ -123,6 +124,17 @@ describe('user command', () => {
       r = run(dbPath, ['list']);
       assert.match(r.stdout, /peter@example\.test/);
       assert.doesNotMatch(r.stdout, /short@/);
+
+      // admin / unadmin, shown in the list.
+      r = run(dbPath, ['admin', 'PETER@example.test']);
+      assert.equal(r.status, 0, r.stderr);
+      assert.match(run(dbPath, ['list']).stdout, /peter@example\.test\tcreated .* UTC\tadmin/);
+      r = run(dbPath, ['unadmin', 'peter@example.test']);
+      assert.equal(r.status, 0, r.stderr);
+      assert.doesNotMatch(run(dbPath, ['list']).stdout, /admin/);
+      r = run(dbPath, ['admin', 'nobody@example.test']);
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /No user/);
 
       // The password set by the command works for logging in.
       const db = openDb(dbPath);

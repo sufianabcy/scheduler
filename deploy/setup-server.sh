@@ -179,7 +179,7 @@ systemctl start planner-backup.timer
 # A command to manage accounts: sudo planner-user add you@example.com
 cat > /usr/local/bin/planner-user <<'EOF'
 #!/usr/bin/env bash
-# Manage Planner logins: planner-user add|passwd|list|remove <email> [--yes]
+# Manage Planner logins: planner-user add|passwd|list|admin|unadmin|remove <email> [--yes]
 set -euo pipefail
 cd /opt/planner/current/server
 exec sudo -u planner bash -c 'set -a; . /etc/planner.env; set +a; exec node --disable-warning=ExperimentalWarning src/cli/users.js "$@"' _ "$@"

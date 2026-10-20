@@ -68,9 +68,15 @@ There is no sign-up page. Accounts are managed on the server:
 ```bash
 npm run user -- add <email>            # create (asks for password twice)
 npm run user -- passwd <email>         # new password; logs that user out on every device
-npm run user -- list
+npm run user -- list                   # admins are marked "admin"
+npm run user -- admin <email>          # lets that user create accounts in the app
+npm run user -- unadmin <email>        # takes that away (works at once)
 npm run user -- remove <email> --yes   # deletes the user and ALL of their data
 ```
+
+An admin can also create accounts in the app: More → Users (`#/users`) lists everyone and has a form for a new
+account (email and a password, with "Make one" for a random readable one). The admin passes the password on.
+Making someone an admin, changing passwords and removing users stay on the command line.
 
 ## Tests
 
@@ -99,7 +105,7 @@ switched with the Day / Goals / Projects tabs at the top of each (`web/src/compo
 | Plan  | Projects | `#/projects`, `#/projects/<id>` | Steps that unlock one by one, checklists, templates         |
 | Mail  | Mail     | `#/mail`, `#/mail/<id>`, `#/mail/starred`, `#/mail/accounts` | Gmail and Outlook inbox, starred, accounts |
 | LMS   | LMS      | `#/lms`, `#/lms/missed`   | Connect the LMS, sync, semester start, courses; missed work by course |
-| More  | More     | `#/more`                  | Notifications, mail accounts, repeating tasks, templates, theme, log out |
+| More  | More     | `#/more`, `#/users`       | Notifications, mail accounts, users (admins), repeating tasks, templates, theme, log out |
 
 - Look: Spider-Man night poster. Colours, fonts, the type scale and sizes are tokens in `web/src/theme.css`;
   every text rule in `web/src/app.css` is one of four roles (Display, Label, Body, Meta).
@@ -128,7 +134,9 @@ All requests that change something must be sent as `application/json`. Everythin
 | GET    | `/api/health`      | `{ ok: true }`                                                 |
 | POST   | `/api/auth/login`  | `{ email, password }` → sets the `sp_session` cookie (30 days) |
 | POST   | `/api/auth/logout` | Ends the session                                               |
-| GET    | `/api/auth/me`     | `{ user: { id, email } }`, or 401                              |
+| GET    | `/api/auth/me`     | `{ user: { id, email, isAdmin } }`, or 401                     |
+| GET    | `/api/admin/users` | Admin only (else 403): `{ users: [{ id, email, createdAt, isAdmin }] }` |
+| POST   | `/api/admin/users` | Admin only: `{ email, password }` → 201 `{ user }`; 409 if the email is taken |
 
 10 failed logins in 15 minutes (per IP address or per email) blocks login for the rest of that window.
 

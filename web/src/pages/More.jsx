@@ -326,6 +326,25 @@ export function More({ user, onLogout }) {
         </ul>
       </section>
 
+      {user.isAdmin && (
+        <section class="section card">
+          <div class="section-head">
+            <h2 class="section-title">Users</h2>
+          </div>
+          <ul class="list">
+            <li class="row">
+              <div class="row-main">
+                <div>Login accounts</div>
+                <div class="row-meta">You're an admin: see who can log in and create new accounts.</div>
+              </div>
+              <a class="btn btn-small" href="#/users">
+                <Icon name="user" size={16} /> Manage
+              </a>
+            </li>
+          </ul>
+        </section>
+      )}
+
       <section class="section card">
         <div class="section-head">
           <h2 class="section-title">Repeating tasks</h2>

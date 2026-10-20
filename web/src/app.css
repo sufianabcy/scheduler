@@ -1097,6 +1097,34 @@ a:focus-visible {
   padding: 8px 14px 12px;
 }
 
+/* ---------- Users (admin) ---------- */
+
+.mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+/* An input with a button beside it. */
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-row .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The new account's login details, to pass on. */
+.new-login {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
 /* ---------- Mail ---------- */
 
 .chip[aria-current='page'] {

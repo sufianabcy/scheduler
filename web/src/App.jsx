@@ -11,6 +11,7 @@ import { More } from './pages/More.jsx';
 import { Plan } from './pages/Plan.jsx';
 import { ProjectDetail, ProjectList } from './pages/Projects.jsx';
 import { Today } from './pages/Today.jsx';
+import { Users } from './pages/Users.jsx';
 import { disablePush, syncPush } from './push.js';
 import { useToast } from './toast.js';
 
@@ -20,7 +21,7 @@ const NAV = [
   { path: '/plan', sections: ['plan', 'goals', 'projects'], label: 'Plan', icon: 'calendar' },
   { path: '/mail', sections: ['mail'], label: 'Mail', icon: 'mail' },
   { path: '/lms', sections: ['lms'], label: 'LMS', icon: 'cap' },
-  { path: '/more', sections: ['more'], label: 'More', icon: 'more' },
+  { path: '/more', sections: ['more', 'users'], label: 'More', icon: 'more' },
 ];
 
 /** Picks the page for a hash route like '/goals/12' (anything after '?' is for the page itself). */
@@ -44,6 +45,8 @@ function page(route, user, onLogout) {
       return <More user={user} onLogout={onLogout} />;
     case 'lms':
       return a === 'missed' ? <LmsMissed /> : <Lms />;
+    case 'users':
+      return <Users user={user} />;
     default:
       return <Today />;
   }

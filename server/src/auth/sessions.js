@@ -11,7 +11,7 @@ export function createSessionStore(db, { sessionDays }) {
     'INSERT INTO sessions (token_hash, user_id, created_ms, expires_ms) VALUES (?, ?, ?, ?)',
   );
   const find = db.prepare(`
-    SELECT s.token_hash, s.expires_ms, u.id, u.email
+    SELECT s.token_hash, s.expires_ms, u.id, u.email, u.is_admin
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token_hash = ?
   `);
@@ -48,7 +48,7 @@ export function createSessionStore(db, { sessionDays }) {
         extend.run(now + lifetimeMs, tokenHash);
         renewed = true;
       }
-      return { user: { id: row.id, email: row.email }, renewed };
+      return { user: { id: row.id, email: row.email, isAdmin: row.is_admin === 1 }, renewed };
     },
 
     destroy(token) {

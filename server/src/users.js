@@ -1,6 +1,7 @@
 import { MIN_PASSWORD_LENGTH, hashPassword } from './auth/password.js';
 
-// User accounts are only created and changed from the command line (src/cli/users.js); there is no sign-up page.
+// There is no sign-up page: accounts are created from the command line (src/cli/users.js) or by an admin in the app
+// (More → Users). Only the command line can make someone an admin.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,7 +16,7 @@ export function validateCredentials(email, password) {
 }
 
 export const findUserByEmail = (db, email) =>
-  db.prepare('SELECT id, email, password_hash FROM users WHERE email = ?').get(normalizeEmail(email));
+  db.prepare('SELECT id, email, password_hash, is_admin FROM users WHERE email = ?').get(normalizeEmail(email));
 
 export async function createUser(db, email, password) {
   email = normalizeEmail(email);
@@ -41,7 +42,13 @@ export async function setPassword(db, email, password) {
 }
 
 export const listUsers = (db) =>
-  db.prepare('SELECT id, email, created_at FROM users ORDER BY id').all();
+  db.prepare('SELECT id, email, created_at, is_admin FROM users ORDER BY id').all();
+
+/** Gives or takes away admin (command line only). */
+export function setAdmin(db, email, isAdmin) {
+  const { changes } = db.prepare('UPDATE users SET is_admin = ? WHERE email = ?').run(isAdmin ? 1 : 0, normalizeEmail(email));
+  if (changes === 0) throw new Error(`No user with email ${normalizeEmail(email)}`);
+}
 
 /** Deletes the user and, through ON DELETE CASCADE, all of their data. */
 export function removeUser(db, email) {

@@ -2,17 +2,21 @@
 //   npm run user -- add <email>          asks for the password twice
 //   npm run user -- passwd <email>       sets a new password and logs that user out everywhere
 //   npm run user -- list
+//   npm run user -- admin <email>        lets that user create accounts in the app (More → Users)
+//   npm run user -- unadmin <email>      takes that away
 //   npm run user -- remove <email> --yes deletes the user and ALL of their data
 // When stdin is not a terminal, the password is read from its first line instead of being asked for.
 
 import { config } from '../config.js';
 import { openDb } from '../db.js';
-import { createUser, listUsers, removeUser, setPassword } from '../users.js';
+import { createUser, listUsers, removeUser, setAdmin, setPassword } from '../users.js';
 
 const USAGE = `Usage:
   npm run user -- add <email>
   npm run user -- passwd <email>
   npm run user -- list
+  npm run user -- admin <email>
+  npm run user -- unadmin <email>
   npm run user -- remove <email> --yes`;
 
 /** Reads a line from the terminal without echoing it. */
@@ -75,7 +79,14 @@ async function main(args) {
       case 'list': {
         const users = listUsers(db);
         if (users.length === 0) console.log('No users yet');
-        for (const u of users) console.log(`${u.id}\t${u.email}\tcreated ${u.created_at} UTC`);
+        for (const u of users) console.log(`${u.id}\t${u.email}\tcreated ${u.created_at} UTC${u.is_admin ? '\tadmin' : ''}`);
+        break;
+      }
+      case 'admin':
+      case 'unadmin': {
+        if (!email) throw new Error(USAGE);
+        setAdmin(db, email, command === 'admin');
+        console.log(command === 'admin' ? `${email} is now an admin` : `${email} is no longer an admin`);
         break;
       }
       case 'remove': {
