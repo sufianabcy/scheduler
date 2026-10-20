@@ -17,20 +17,28 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* A faint web in the top-right corner, behind everything. */
+/* A faint web in the top-right corner, behind everything: the film kind, uneven and sagging, not a neat target.
+   web.svg is only its shape (drawn by scripts/make_web.py); the colour is --web-line. */
 body::before {
   content: '';
   position: fixed;
-  top: -120px;
-  right: -120px;
-  width: 520px;
-  height: 520px;
+  top: -130px;
+  right: -130px;
+  width: 540px;
+  height: 540px;
   pointer-events: none;
   z-index: 0;
-  background:
-    repeating-conic-gradient(from 0deg, var(--web-line) 0 0.6deg, transparent 0.6deg 30deg),
-    repeating-radial-gradient(circle, transparent 0 46px, var(--web-line) 46px 47.5px);
-  mask: radial-gradient(circle, #000 0 55%, transparent 70%);
+  background: var(--web-line);
+  mask: url('./assets/web.svg') center / contain no-repeat;
+}
+
+@media (min-width: 900px) {
+  body::before {
+    top: -170px;
+    right: -170px;
+    width: 680px;
+    height: 680px;
+  }
 }
 
 button,

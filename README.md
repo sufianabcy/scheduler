@@ -111,8 +111,10 @@ switched with the Day / Goals / Projects tabs at the top of each (`web/src/compo
   service worker after the first load. No idle animations, no new dependencies. Lighthouse not measured yet.
 - `web/public/sw.js` makes the app installable and lets it open offline with the last data it loaded. Changes
   need the network. Logging out deletes the saved data.
-- App icons (red mask with lens eyes) are drawn by `web/scripts/make_icons.py` (`npm --prefix web run icons`, needs
-  Pillow). After changing them, bump `SHELL` in `web/public/sw.js`.
+- App icons (the round unimpressed face) are drawn by `web/scripts/make_icons.py` (`npm --prefix web run icons`,
+  needs Pillow). After changing them, bump `SHELL` in `web/public/sw.js`.
+- The faint background web (uneven, sagging, like the films' webs) is `web/src/assets/web.svg`, drawn by
+  `web/scripts/make_web.py` (`npm --prefix web run web`); change `SEED` there for a different web.
 
 ## API so far
 
