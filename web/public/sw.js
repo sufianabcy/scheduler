@@ -5,7 +5,7 @@
 // - Other files (scripts, styles, icons): saved on first use. Built file names change with every build.
 // Bump SHELL when this file's caching rules change, to drop the old caches.
 
-const SHELL = 'shell-v4';
+const SHELL = 'shell-v5';
 const API = 'api';
 // Registered as /sw.js?dev by the development server: notifications only, no caching.
 const DEV = new URL(self.location.href).searchParams.has('dev');
