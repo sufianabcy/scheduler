@@ -1333,16 +1333,66 @@ a.chip {
   color: #f2f3f7;
 }
 
-.login-card h1 {
-  margin: 0 0 4px;
-  text-align: center;
-  font-size: var(--fs-2xl);
+/*
+ * The card is lettered like the poster's SPIDER-MAN title: bold condensed caps, slanted, in brushed gold; the rest in
+ * the same condensed face. Barlow Condensed has no italic file here, so the browser slants it (font-synthesis).
+ * What you type stays in the plain text face, so emails and passwords are easy to read.
+ */
+.login-card {
+  font-family: var(--font-display);
 }
 
-.login-card p {
-  margin: 0 0 22px;
+.login-card h1 {
+  margin: 0 0 6px;
   text-align: center;
+  font-size: clamp(2.4rem, 7vw, 2.9rem);
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--gold);
+  background: linear-gradient(180deg, #fbefd2 0%, #e2c48a 45%, #b48a4c 75%, #8e6a36 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+
+/* Like the poster's tagline: small white caps, spaced out. */
+.login-card p {
+  margin: 0 0 24px;
+  text-align: center;
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.login-card .field label {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
   color: var(--muted);
+}
+
+.login-card .input {
+  font-family: var(--font);
+}
+
+.login-card .btn {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.login-card .small {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 /* Hide the corner web on this screen so it doesn't sit on the poster. */
