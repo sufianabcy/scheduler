@@ -14,7 +14,7 @@ export function adminRoutes({ db }) {
     res.json({ users: listUsers(db).map(userJson) });
   });
 
-  // Body: { email, password }. The admin passes the password on; the new user can't change it in the app yet.
+  // Body: { email, password }. The admin passes the password on; the new user can change it in More → Password.
   router.post('/users', async (req, res) => {
     const email = normalizeEmail(req.body?.email);
     const password = req.body?.password;

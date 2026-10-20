@@ -11,7 +11,8 @@ Status: draft, updated 2026-10-20. Items marked **(assumed)** still need your co
 
 - At most 2 users. Each user has their own separate data.
 - Email + password login. There is no sign-up page: accounts are created with a command on the server, or by an
-  admin in the app (More → Users). Only the server command can make someone an admin.
+  admin in the app (More → Users). Only the server command can make someone an admin. Anyone can change their own
+  password in More (current password first; their other devices are logged out).
 - Passwords are stored as scrypt hashes (built into Node, so no extra package).
 - You stay logged in for 30 days. Using the app pushes that forward, so you stay logged in as long as you open it
   at least once a month.

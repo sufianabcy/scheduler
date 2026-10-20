@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { DUMMY_HASH, verifyPassword } from '../auth/password.js';
 import { SESSION_COOKIE, requireAuth, sessionCookieOptions } from '../auth/middleware.js';
 import { createRateLimiter } from '../auth/rateLimit.js';
-import { findUserByEmail, normalizeEmail } from '../users.js';
+import { changeOwnPassword, findUserByEmail, normalizeEmail } from '../users.js';
 
 const LOGIN_FAILED = 'Wrong email or password';
 
@@ -45,6 +45,40 @@ export function authRoutes({ db, sessions, config }) {
   });
 
   router.get('/me', requireAuth, (req, res) => {
+    res.json({ user: req.user });
+  });
+
+  // Change your own password: { currentPassword, newPassword }. Logs out every other device; this one gets a new
+  // session. Wrong current passwords count towards the same 10-per-15-minutes limit as logins.
+  router.post('/password', requireAuth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (typeof currentPassword !== 'string' || !currentPassword || typeof newPassword !== 'string') {
+      return res.status(400).json({ error: 'Current and new password are required' });
+    }
+    if (newPassword.length > 200) return res.status(400).json({ error: 'Password must be at most 200 characters' });
+
+    const key = `password:${req.user.id}`;
+    const wait = limiter.blockedFor(key);
+    if (wait > 0) {
+      res.set('Retry-After', String(wait));
+      return res.status(429).json({ error: `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.` });
+    }
+    const user = findUserByEmail(db, req.user.email);
+    if (!user || !(await verifyPassword(currentPassword, user.password_hash))) {
+      limiter.fail(key);
+      return res.status(400).json({ error: 'Your current password is wrong' });
+    }
+    if (newPassword === currentPassword) {
+      return res.status(400).json({ error: 'Choose a new password, different from the current one' });
+    }
+    try {
+      await changeOwnPassword(db, user.id, newPassword);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    limiter.reset(key);
+    const token = sessions.create(user.id);
+    res.cookie(SESSION_COOKIE, token, sessionCookieOptions(config, sessions.lifetimeMs));
     res.json({ user: req.user });
   });
 

@@ -294,7 +294,93 @@ function Notifications() {
   );
 }
 
-export function More({ user, onLogout }) {
+/** Change your own password: the current one first, then the new one twice. Other devices are logged out. */
+function PasswordSection() {
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [again, setAgain] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const mismatch = again.length > 0 && next !== again;
+  const close = () => {
+    setOpen(false);
+    setCurrent('');
+    setNext('');
+    setAgain('');
+  };
+  const submit = async (e) => {
+    e.preventDefault();
+    if (next !== again) return;
+    setBusy(true);
+    const res = await attempt(post('/auth/password', { currentPassword: current, newPassword: next }));
+    setBusy(false);
+    if (res) {
+      close();
+      toast('Password changed. Other devices were logged out.');
+    }
+  };
+
+  return (
+    <ul class="list">
+      <li class="row" style={{ flexWrap: 'wrap' }}>
+        <div class="row-main">
+          <div>Password</div>
+          <div class="row-meta">Changing it logs you out on your other devices.</div>
+        </div>
+        {!open && (
+          <button type="button" class="btn btn-small" onClick={() => setOpen(true)}>
+            <Icon name="lock" size={16} /> Change
+          </button>
+        )}
+        {open && (
+          <form class="editor" onSubmit={submit}>
+            <div class="field">
+              <label for="pw-current">Current password</label>
+              <input id="pw-current" class="input" type="password" autocomplete="current-password" required value={current} onInput={(e) => setCurrent(e.currentTarget.value)} />
+            </div>
+            <div class="field">
+              <label for="pw-new">New password</label>
+              <input id="pw-new" class="input" type="password" autocomplete="new-password" required minLength={8} maxLength={200} value={next} onInput={(e) => setNext(e.currentTarget.value)} />
+              <div class="small muted" style={{ marginTop: '6px' }}>
+                At least 8 characters.
+              </div>
+            </div>
+            <div class="field">
+              <label for="pw-again">New password again</label>
+              <input
+                id="pw-again"
+                class="input"
+                type="password"
+                autocomplete="new-password"
+                required
+                aria-invalid={mismatch}
+                aria-describedby={mismatch ? 'pw-mismatch' : undefined}
+                value={again}
+                onInput={(e) => setAgain(e.currentTarget.value)}
+              />
+              {mismatch && (
+                <div id="pw-mismatch" class="small prio-text prio-1" style={{ marginTop: '6px' }}>
+                  The new passwords don't match.
+                </div>
+              )}
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary btn-small" type="submit" disabled={busy || !current || next.length < 8 || next !== again}>
+                {busy ? 'Saving…' : 'Change password'}
+              </button>
+              <button type="button" class="btn btn-ghost btn-small" onClick={close}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </li>
+    </ul>
+  );
+}
+
+export function More({ user, onLogout, onTour }) {
   const [theme, setThemeState] = useState(currentTheme());
   const toggleTheme = () => setThemeState(setTheme(theme === 'dark' ? 'light' : 'dark'));
 
@@ -357,6 +443,30 @@ export function More({ user, onLogout }) {
           <h2 class="section-title">Project templates</h2>
         </div>
         <Templates />
+      </section>
+
+      <section class="section card">
+        <div class="section-head">
+          <h2 class="section-title">Help</h2>
+        </div>
+        <ul class="list">
+          <li class="row">
+            <div class="row-main">
+              <div>App tour</div>
+              <div class="row-meta">A one-minute walkthrough of what Planner can do.</div>
+            </div>
+            <button type="button" class="btn btn-small" onClick={onTour}>
+              Start tour <Icon name="right" size={16} />
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section card">
+        <div class="section-head">
+          <h2 class="section-title">Your account</h2>
+        </div>
+        <PasswordSection />
       </section>
 
       <section class="section card">

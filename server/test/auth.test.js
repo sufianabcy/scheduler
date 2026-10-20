@@ -75,6 +75,45 @@ describe('auth API', () => {
     assert.equal((await t.request('/api/auth/me', { cookie })).status, 401);
   });
 
+  test('changing your own password: checks the current one, logs out other devices, keeps this one', async () => {
+    const mayPassword = randomPassword();
+    await t.addUser('may@example.test', mayPassword);
+    const signIn = async (pw) => login({ email: 'may@example.test', password: pw });
+    const phone = cookieFrom(await signIn(mayPassword));
+    const laptop = cookieFrom(await signIn(mayPassword));
+    const change = (cookie, body) => t.request('/api/auth/password', { method: 'POST', cookie, body });
+
+    assert.equal((await change(undefined, { currentPassword: mayPassword, newPassword: randomPassword() })).status, 401);
+    assert.equal((await change(laptop, { newPassword: randomPassword() })).status, 400);
+    const wrong = await change(laptop, { currentPassword: 'not-it-at-all', newPassword: randomPassword() });
+    assert.equal(wrong.status, 400);
+    assert.match((await wrong.json()).error, /current password is wrong/);
+    assert.equal((await change(laptop, { currentPassword: mayPassword, newPassword: 'short' })).status, 400);
+    assert.equal((await change(laptop, { currentPassword: mayPassword, newPassword: mayPassword })).status, 400);
+
+    const newPassword = randomPassword();
+    const res = await change(laptop, { currentPassword: mayPassword, newPassword });
+    assert.equal(res.status, 200);
+    const laptopNow = cookieFrom(res);
+    assert.ok(laptopNow && laptopNow !== laptop);
+    assert.equal((await t.request('/api/auth/me', { cookie: laptopNow })).status, 200);
+    assert.equal((await t.request('/api/auth/me', { cookie: laptop })).status, 401);
+    assert.equal((await t.request('/api/auth/me', { cookie: phone })).status, 401);
+    assert.equal((await signIn(mayPassword)).status, 401);
+    assert.equal((await signIn(newPassword)).status, 200);
+  });
+
+  test('too many wrong current passwords block changing it for a while', async () => {
+    const pw = randomPassword();
+    await t.addUser('ned@example.test', pw);
+    const cookie = cookieFrom(await login({ email: 'ned@example.test', password: pw }));
+    const change = (currentPassword) => t.request('/api/auth/password', { method: 'POST', cookie, body: { currentPassword, newPassword: randomPassword() } });
+    for (let i = 0; i < 10; i++) assert.equal((await change('wrong-password')).status, 400);
+    const blocked = await change(pw);
+    assert.equal(blocked.status, 429);
+    assert.ok(Number(blocked.headers.get('retry-after')) > 0);
+  });
+
   test('only a hash of the session token is stored', async () => {
     const cookie = cookieFrom(await login({ email, password }));
     const token = cookie.split('=')[1];

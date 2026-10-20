@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { get, post, setLoggedOutHandler } from './api.js';
 import { Icon } from './components/Icon.jsx';
+import { Tour, tourSeen } from './components/Tour.jsx';
 import { Loading } from './components/ui.jsx';
 import { useOnline, useRoute } from './hooks.js';
 import { GoalDetail, GoalList } from './pages/Goals.jsx';
@@ -25,7 +26,7 @@ const NAV = [
 ];
 
 /** Picks the page for a hash route like '/goals/12' (anything after '?' is for the page itself). */
-function page(route, user, onLogout) {
+function page(route, user, onLogout, onTour) {
   const [section, a, b] = route.split('?')[0].split('/').filter(Boolean);
   switch (section) {
     case undefined:
@@ -42,7 +43,7 @@ function page(route, user, onLogout) {
       if (a === 'starred') return <MailList view="starred" />;
       return a ? <MailDetail id={a} /> : <MailList />;
     case 'more':
-      return <More user={user} onLogout={onLogout} />;
+      return <More user={user} onLogout={onLogout} onTour={onTour} />;
     case 'lms':
       return a === 'missed' ? <LmsMissed /> : <Lms />;
     case 'users':
@@ -61,6 +62,7 @@ export function App() {
   // undefined = still checking, null = logged out.
   const [user, setUser] = useState(undefined);
   const [offlineStart, setOfflineStart] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const route = useRoute();
   const online = useOnline();
   const message = useToast();
@@ -82,6 +84,11 @@ export function App() {
     });
     checkSession();
   }, []);
+
+  // The app tour opens by itself the first time someone logs in on this device.
+  useEffect(() => {
+    if (user && !tourSeen(user.id)) setTourOpen(true);
+  }, [user?.id]);
 
   // Keep this device's notifications working: sync when logged in, retry a few times if Chrome's push service
   // is slow to answer (it can be on a fresh install), and check again whenever the app comes back to the front.
@@ -149,8 +156,9 @@ export function App() {
       </nav>
       <main class="main">
         {!online && <div class="offline">You're offline. Showing the last saved copy; changes need internet.</div>}
-        {page(route, user, logout)}
+        {page(route, user, logout, () => setTourOpen(true))}
       </main>
+      {tourOpen && <Tour userId={user.id} onClose={() => setTourOpen(false)} />}
       {message && (
         <div class="toast" role="status">
           {message}

@@ -1,7 +1,7 @@
 import { MIN_PASSWORD_LENGTH, hashPassword } from './auth/password.js';
 
 // There is no sign-up page: accounts are created from the command line (src/cli/users.js) or by an admin in the app
-// (More → Users). Only the command line can make someone an admin.
+// (More → Users). Only the command line can make someone an admin. Users change their own password in More.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,6 +28,16 @@ export async function createUser(db, email, password) {
     .prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)')
     .run(email, hash);
   return { id: Number(lastInsertRowid), email };
+}
+
+/** A user changing their own password in the app (More → Password). Logs them out everywhere; the caller starts a
+ *  fresh session for the device they did it on. The current password is checked by the caller. */
+export async function changeOwnPassword(db, userId, password) {
+  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+  }
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await hashPassword(password), userId);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
 }
 
 /** Sets a new password and logs the user out everywhere. */
