@@ -4,6 +4,7 @@ import { Icon } from './components/Icon.jsx';
 import { Loading } from './components/ui.jsx';
 import { useOnline, useRoute } from './hooks.js';
 import { GoalDetail, GoalList } from './pages/Goals.jsx';
+import { Lms, LmsMissed } from './pages/Lms.jsx';
 import { Login } from './pages/Login.jsx';
 import { MailAccounts, MailDetail, MailList } from './pages/Mail.jsx';
 import { More } from './pages/More.jsx';
@@ -13,13 +14,13 @@ import { Today } from './pages/Today.jsx';
 import { disablePush, syncPush } from './push.js';
 import { useToast } from './toast.js';
 
+// Plan holds the day plan, monthly goals and projects (switched with tabs on those pages).
 const NAV = [
-  { path: '/', section: '', label: 'Today', icon: 'home' },
-  { path: '/plan', section: 'plan', label: 'Plan', icon: 'calendar' },
-  { path: '/goals', section: 'goals', label: 'Goals', icon: 'target' },
-  { path: '/projects', section: 'projects', label: 'Projects', icon: 'steps' },
-  { path: '/mail', section: 'mail', label: 'Mail', icon: 'mail' },
-  { path: '/more', section: 'more', label: 'More', icon: 'more' },
+  { path: '/', sections: [''], label: 'Today', icon: 'home' },
+  { path: '/plan', sections: ['plan', 'goals', 'projects'], label: 'Plan', icon: 'calendar' },
+  { path: '/mail', sections: ['mail'], label: 'Mail', icon: 'mail' },
+  { path: '/lms', sections: ['lms'], label: 'LMS', icon: 'cap' },
+  { path: '/more', sections: ['more'], label: 'More', icon: 'more' },
 ];
 
 /** Picks the page for a hash route like '/goals/12' (anything after '?' is for the page itself). */
@@ -41,6 +42,8 @@ function page(route, user, onLogout) {
       return a ? <MailDetail id={a} /> : <MailList />;
     case 'more':
       return <More user={user} onLogout={onLogout} />;
+    case 'lms':
+      return a === 'missed' ? <LmsMissed /> : <Lms />;
     default:
       return <Today />;
   }
@@ -87,7 +90,14 @@ export function App() {
         if (attemptNo < 4) timer = setTimeout(() => trySync(attemptNo + 1), 5000 * 2 ** attemptNo);
       });
     trySync(0);
-    const onVisible = () => document.visibilityState === 'visible' && syncPush().catch(() => {});
+    // Ask the server to refresh LMS deadlines; it does so at most every 10 minutes, in the background.
+    const syncLms = () => post('/lms/sync', { auto: true }).catch(() => {});
+    syncLms();
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      syncPush().catch(() => {});
+      syncLms();
+    };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       clearTimeout(timer);
@@ -128,7 +138,7 @@ export function App() {
           Planner
         </div>
         {NAV.map((item) => (
-          <a key={item.path} href={`#${item.path}`} aria-current={section === item.section ? 'page' : undefined}>
+          <a key={item.path} href={`#${item.path}`} aria-current={item.sections.includes(section) ? 'page' : undefined}>
             <Icon name={item.icon} size={22} />
             {item.label}
           </a>

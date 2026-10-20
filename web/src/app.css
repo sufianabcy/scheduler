@@ -351,7 +351,7 @@ a:focus-visible {
 /* Display role. Uppercase via text-transform only, so screen readers read normal words. */
 .page-title,
 .brand,
-.login h1,
+.login-card h1,
 .clock,
 .progress-pct {
   font-family: var(--font-display);
@@ -362,7 +362,7 @@ a:focus-visible {
 
 .page-title,
 .brand,
-.login h1 {
+.login-card h1 {
   color: var(--gold);
 }
 
@@ -1050,6 +1050,21 @@ a:focus-visible {
   color: var(--red-text);
 }
 
+/* ---------- LMS ---------- */
+
+/* Overdue LMS work, at the top of Today. */
+.lms-overdue {
+  border-color: var(--red);
+}
+
+.lms-overdue .section-title {
+  color: var(--red-text);
+}
+
+.lms-synced {
+  padding: 8px 14px 12px;
+}
+
 /* ---------- Mail ---------- */
 
 .chip[aria-current='page'] {
@@ -1063,7 +1078,8 @@ a.chip {
   text-decoration: none;
 }
 
-.mail-tabs {
+.mail-tabs,
+.page-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -1215,6 +1231,7 @@ a.chip {
 
 /* ---------- Login ---------- */
 
+/* "You're offline" screen before login. */
 .login {
   position: relative;
   z-index: 1; /* above the fixed corner web */
@@ -1227,30 +1244,98 @@ a.chip {
 .login .card {
   width: 100%;
   max-width: 380px;
-  overflow: hidden;
-  padding: 0 24px 28px;
-}
-
-/* The poster at the top of the login card, fading into the card. */
-.login-hero {
-  height: 160px;
-  margin: 0 -24px 14px;
-  background:
-    linear-gradient(0deg, var(--surface) 0%, transparent 60%),
-    url('./assets/hero/hero-wide.webp') center 20% / cover no-repeat,
-    #080a12;
-}
-
-.login h1 {
-  margin: 0 0 4px;
-  text-align: center;
-  font-size: var(--fs-2xl);
+  padding: 28px 24px;
 }
 
 .login p {
   margin: 0 0 22px;
   text-align: center;
   color: var(--muted);
+}
+
+/*
+ * Login: the full poster behind the card. Always dark, in both themes: the dark theme's colours are set again here
+ * so the card's inputs, buttons and text keep them under the light theme too.
+ */
+.login-page {
+  color-scheme: dark;
+  --bg: #080a12;
+  --surface: #10141f;
+  --surface-2: #171c2b;
+  --border: #262c40;
+  --text: #f2f3f7;
+  --muted: #9ea5bb;
+  --faint: #6b7290;
+  --red: #d8262c;
+  --red-strong: #b91c22;
+  --red-text: #ff5c5c;
+  --red-soft: rgba(216, 38, 44, 0.16);
+  --gold: #d9b36c;
+  --eye: #eaf6ff;
+  --eye-glow: rgba(150, 210, 255, 0.45);
+  --blue: #3b6cff;
+  --danger: #ff6b6b;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 24px max(24px, 6vw);
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(90deg, rgba(8, 10, 18, 0) 0%, rgba(8, 10, 18, 0) 52%, rgba(8, 10, 18, 0.88) 74%),
+    url('./assets/hero/login-poster.webp') left center / cover no-repeat,
+    #080a12;
+  color: var(--text);
+  overflow-y: auto;
+}
+
+.login-page .login-card {
+  flex: none;
+  width: min(360px, 100%);
+  padding: 28px 24px;
+  background: rgba(16, 20, 31, 0.94); /* nearly solid: no backdrop-filter */
+  border: 1px solid #262c40;
+  color: #f2f3f7;
+}
+
+.login-card h1 {
+  margin: 0 0 4px;
+  text-align: center;
+  font-size: var(--fs-2xl);
+}
+
+.login-card p {
+  margin: 0 0 22px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Hide the corner web on this screen so it doesn't sit on the poster. */
+body:has(.login-page)::before {
+  display: none;
+}
+
+/* Phones and portrait screens: poster on top, card below it. */
+@media (max-aspect-ratio: 1/1) {
+  .login-page {
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+    background:
+      linear-gradient(0deg, #080a12 38%, rgba(8, 10, 18, 0) 62%),
+      url('./assets/hero/login-poster.webp') 48% top / auto 62vh no-repeat,
+      #080a12;
+  }
+
+  .login-page .login-card {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+  }
 }
 
 .form-error {

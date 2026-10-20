@@ -55,3 +55,9 @@ export function formatTime(hhmm) {
   const [h, m] = hhmm.split(':').map(Number);
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 }
+
+/** A UTC time as a day and IST time: "Today 11:59 PM", "Tomorrow 6:00 PM", "Mon 19 Oct 6:00 PM". */
+export function dueLabel(iso, today = todayIST()) {
+  const date = new Date(iso);
+  return `${dayLabel(dayFormat.format(date), today)} ${clockFormat.format(date)}`;
+}

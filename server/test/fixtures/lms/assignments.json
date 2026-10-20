@@ -1,0 +1,26 @@
+{
+  "courses": [
+    {
+      "id": 101,
+      "fullname": "Probability &amp; Statistics",
+      "shortname": "MT-101",
+      "assignments": [
+        { "id": 11, "cmid": 501, "course": 101, "name": "Assignment 1", "nosubmissions": 0, "allowsubmissionsfromdate": 1790000000, "duedate": 1790742600, "cutoffdate": 1791174600 },
+        { "id": 12, "cmid": 502, "course": 101, "name": "Assignment 2", "nosubmissions": 0, "allowsubmissionsfromdate": 1790000000, "duedate": 1791606600, "cutoffdate": 1792038600 },
+        { "id": 13, "cmid": 503, "course": 101, "name": "Lab report 3", "nosubmissions": 0, "allowsubmissionsfromdate": 1790000000, "duedate": 1792297800, "cutoffdate": 1792729800 }
+      ]
+    },
+    {
+      "id": 102,
+      "fullname": "Data Structures",
+      "shortname": "CS-102",
+      "assignments": [
+        { "id": 21, "cmid": 601, "course": 102, "name": "Linked list exercise", "nosubmissions": 0, "allowsubmissionsfromdate": 0, "duedate": 1792607340, "cutoffdate": 0 },
+        { "id": 22, "cmid": 602, "course": 102, "name": "Old assignment", "nosubmissions": 0, "allowsubmissionsfromdate": 0, "duedate": 1757910600, "cutoffdate": 0 },
+        { "id": 23, "cmid": 603, "course": 102, "name": "Viva (offline)", "nosubmissions": 1, "allowsubmissionsfromdate": 0, "duedate": 1792607340, "cutoffdate": 0 },
+        { "id": 24, "cmid": 604, "course": 102, "name": "Tree traversal", "nosubmissions": 0, "allowsubmissionsfromdate": 0, "duedate": 1792499400, "cutoffdate": 1793075400 }
+      ]
+    }
+  ],
+  "warnings": []
+}

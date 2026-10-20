@@ -21,11 +21,19 @@ export const randomPassword = () => randomBytes(12).toString('base64url');
  * Starts the app on a random port with an in-memory database. Call close() when done.
  * Pass `now` (a function returning a Date) to control the app's clock.
  */
-export async function startTestServer({ now, config = {}, mail } = {}) {
+export async function startTestServer({ now, config = {}, mail, lms } = {}) {
   const db = openDb(':memory:');
   // `mail` (optional): (db) => a mail service, e.g. one pointed at the fake Gmail/Outlook servers.
   const mailService = mail?.(db);
-  const app = createApp({ db, config: { ...testConfig, ...config }, ...(now && { now }), ...(mailService && { mail: mailService }) });
+  // `lms` (optional): (db) => an LMS service, e.g. one pointed at the fake Moodle server.
+  const lmsService = lms?.(db);
+  const app = createApp({
+    db,
+    config: { ...testConfig, ...config },
+    ...(now && { now }),
+    ...(mailService && { mail: mailService }),
+    ...(lmsService && { lms: lmsService }),
+  });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
@@ -35,6 +43,7 @@ export async function startTestServer({ now, config = {}, mail } = {}) {
     db,
     baseUrl,
     mail: mailService,
+    lms: lmsService,
     addUser: (email, password) => createUser(db, email, password),
     /** fetch() against the app; `cookie` is sent as-is, JSON bodies are encoded. */
     request(path, { method = 'GET', body, cookie, headers = {} } = {}) {

@@ -5,11 +5,11 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 // database, so a copy of the database or a backup is useless without it.
 // Stored format: v1.<iv>.<auth tag>.<ciphertext>, each part base64url.
 
-/** Reads MAIL_TOKEN_KEY; returns null when it isn't set (Mail is then switched off). */
-export function loadKey(value) {
+/** Reads MAIL_TOKEN_KEY (or the LMS's LMS_TOKEN_KEY); returns null when it isn't set (that feature is then off). */
+export function loadKey(value, name = 'MAIL_TOKEN_KEY') {
   if (!value) return null;
   const key = Buffer.from(value, 'base64');
-  if (key.length !== 32) throw new Error('MAIL_TOKEN_KEY must be 32 bytes, base64 encoded');
+  if (key.length !== 32) throw new Error(`${name} must be 32 bytes, base64 encoded`);
   return key;
 }
 

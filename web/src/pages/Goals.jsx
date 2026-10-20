@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { del, get, patch, post, put } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
 import { AddRow, Check, InlineEdit, LoadError, Loading, MoveButtons, PageHeader, Progress, moved } from '../components/ui.jsx';
+import { PlanTabs } from '../components/PlanTabs.jsx';
 import { addMonths, dayLabel, monthLabel, todayIST } from '../dates.js';
 import { attempt, go, useLoad } from '../hooks.js';
 import { GoalCard } from './Today.jsx';
@@ -67,6 +68,7 @@ export function GoalList({ month: requested }) {
   return (
     <>
       <PageHeader title="Monthly goals" sub="Each goal's tasks open one at a time. Unfinished goals move to next month." />
+      <PlanTabs current="goals" />
 
       <div class="switcher">
         <button type="button" class="icon-btn" aria-label="Previous month" onClick={() => go(`/goals/m/${addMonths(month, -1)}`)}>

@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { config } from './config.js';
 import { openDb } from './db.js';
 import { createJobs } from './jobs.js';
+import { createLms } from './lms/index.js';
 import { createMail } from './mail/index.js';
 import { createNotifier } from './notifications.js';
 import { createPush, loadVapidKeys } from './push.js';
@@ -9,8 +10,9 @@ import { createPush, loadVapidKeys } from './push.js';
 const db = openDb(config.dbPath);
 const push = createPush(db, { vapid: loadVapidKeys(db), subject: config.vapidSubject });
 const mail = createMail(db, { config });
-const jobs = createJobs(db, { notifier: createNotifier(db, { push, mail }), mail });
-const app = createApp({ db, config, jobs, push, mail });
+const lms = createLms(db, { config, push });
+const jobs = createJobs(db, { notifier: createNotifier(db, { push, mail, lms }), mail, lms });
+const app = createApp({ db, config, jobs, push, mail, lms });
 const stopJobs = jobs.start();
 
 const server = app.listen(config.port, config.host, () => {

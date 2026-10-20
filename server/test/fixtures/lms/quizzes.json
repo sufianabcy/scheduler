@@ -1,0 +1,8 @@
+{
+  "quizzes": [
+    { "id": 31, "coursemodule": 701, "course": 101, "name": "Quiz 1", "timeopen": 1792000000, "timeclose": 1792211400 },
+    { "id": 32, "coursemodule": 702, "course": 102, "name": "Quiz 2", "timeopen": 1792400000, "timeclose": 1792668600 },
+    { "id": 33, "coursemodule": 703, "course": 102, "name": "Practice quiz (no close date)", "timeopen": 0, "timeclose": 0 }
+  ],
+  "warnings": []
+}

@@ -9,10 +9,18 @@ import { dayOf, monthOf, weekStart } from './time.js';
  * 4. Goals from earlier months: fully finished ones are deleted; the rest move to this month,
  *    remembering the month they first came from.
  *
+ * Before step 1, LMS tasks whose work can still be handed in move to today instead of going to Unfinished.
+ *
  * Each run is recorded in job_runs, so it never runs twice for a day. If the server was down at midnight,
  * the next check catches up (the steps don't depend on how many days were missed).
  */
-export function rollover(db, today, month) {
+export function rollover(db, today, month, nowIso = new Date().toISOString()) {
+  db.prepare(`
+    UPDATE daily_tasks SET day = ?, reminded_at = NULL
+    WHERE status = 'open' AND day < ? AND id IN (
+      SELECT task_id FROM lms_items
+      WHERE task_id IS NOT NULL AND status IN ('upcoming', 'overdue') AND (cutoff_at IS NULL OR cutoff_at > ?))`).run(today, today, nowIso);
+
   db.prepare(`
     UPDATE daily_tasks
     SET status = CASE WHEN repeating_task_id IS NULL THEN 'unfinished' ELSE 'missed' END
@@ -37,9 +45,9 @@ export function rollover(db, today, month) {
 
 /**
  * `notifier` (optional) sends the 23:00 and 06:00 notifications on the same timer; `mail` (optional) syncs mail
- * accounts that are due (every 5 minutes).
+ * accounts that are due (every 5 minutes); `lms` (optional) syncs LMS accounts that are due (every 2 hours).
  */
-export function createJobs(db, { now = () => new Date(), notifier, mail } = {}) {
+export function createJobs(db, { now = () => new Date(), notifier, mail, lms } = {}) {
   const hasRun = db.prepare('SELECT 1 FROM job_runs WHERE name = ? AND run_key = ?');
   const markRun = db.prepare('INSERT INTO job_runs (name, run_key) VALUES (?, ?)');
 
@@ -48,7 +56,7 @@ export function createJobs(db, { now = () => new Date(), notifier, mail } = {}) 
     const today = dayOf(at);
     if (hasRun.get('rollover', today)) return false;
     transaction(db, () => {
-      rollover(db, today, monthOf(at));
+      rollover(db, today, monthOf(at), at.toISOString());
       markRun.run('rollover', today);
     });
     return true;
@@ -70,6 +78,7 @@ export function createJobs(db, { now = () => new Date(), notifier, mail } = {}) 
           .then((results) => results.forEach((r) => console.log(`Sent ${r.job} notification to user ${r.userId}: ${r.sent} ok, ${r.failed} failed`)))
           .catch((err) => console.error('Notifications failed', err));
         mail?.runDue().catch((err) => console.error(`Mail sync failed: ${err.status ?? ''} ${err.code ?? err.name}`));
+        lms?.runDue().catch((err) => console.error(`LMS sync failed: ${err.code ?? err.name}`));
       };
       tick();
       const timer = setInterval(tick, intervalMs);

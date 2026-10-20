@@ -23,4 +23,9 @@ export const config = {
     google: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET },
     microsoft: { clientId: process.env.MS_CLIENT_ID, clientSecret: process.env.MS_CLIENT_SECRET },
   },
+  // KL University LMS (Moodle). Switched off until LMS_TOKEN_KEY is set.
+  lms: {
+    tokenKey: process.env.LMS_TOKEN_KEY,
+    url: (process.env.LMS_URL ?? 'https://lms.kluniversity.in').replace(/\/$/, ''),
+  },
 };

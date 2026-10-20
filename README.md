@@ -15,6 +15,7 @@ See [SPEC.md](SPEC.md) for what it does and how it's built.
 | 6    | AWS, HTTPS, backups, auto-deploy                  | Ready to set up: see [DEPLOY.md](DEPLOY.md) |
 | 7    | Spider-Man design pass                            | Done (two rounds) |
 | 8    | Mail: Gmail and Outlook                           | Built; needs the Google/Microsoft setup in [DEPLOY.md](DEPLOY.md#mail-setup-gmail-and-outlook) |
+| 9    | KL University LMS sync                            | Built; tested against a stand-in LMS and with a real LMS login on the Mac (2026-10-20). Server needs `LMS_TOKEN_KEY` ([DEPLOY.md](DEPLOY.md#lms-setup-kl-university)) |
 
 ## Run it locally
 
@@ -87,13 +88,18 @@ The web tests cover quick add (`web/src/quickadd.js`).
 
 `web/` is Preact + Vite in plain JavaScript (about 15 KB of script after compression). Screens:
 
-| Screen   | Route                     | What it does                                                      |
-|----------|---------------------------|-------------------------------------------------------------------|
-| Today    | `#/`                      | Today's checklist, dated goal tasks, Unfinished list, goal and project cards |
-| Plan     | `#/plan`, `#/plan/<day>`  | Any day's checklist; opens on tomorrow from 6 PM                  |
-| Goals    | `#/goals`, `#/goals/<id>` | Monthly goals by month; ordered tasks with optional dates         |
-| Projects | `#/projects`, `#/projects/<id>` | Steps that unlock one by one, checklists, templates         |
-| More     | `#/more`                  | Repeating tasks, templates, theme, log out                        |
+The bottom bar (sidebar on wide screens) has five tabs: **Today, Plan, Mail, LMS, More**. Plan holds three pages,
+switched with the Day / Goals / Projects tabs at the top of each (`web/src/components/PlanTabs.jsx`).
+
+| Tab   | Screen   | Route                     | What it does                                                      |
+|-------|----------|---------------------------|-------------------------------------------------------------------|
+| Today | Today    | `#/`                      | Today's checklist, overdue LMS work, Unfinished list, LMS card, goal and project cards |
+| Plan  | Day      | `#/plan`, `#/plan/<day>`  | Any day's checklist; opens on tomorrow from 6 PM                  |
+| Plan  | Goals    | `#/goals`, `#/goals/<id>` | Monthly goals by month; ordered tasks with optional dates         |
+| Plan  | Projects | `#/projects`, `#/projects/<id>` | Steps that unlock one by one, checklists, templates         |
+| Mail  | Mail     | `#/mail`, `#/mail/<id>`, `#/mail/starred`, `#/mail/accounts` | Gmail and Outlook inbox, starred, accounts |
+| LMS   | LMS      | `#/lms`, `#/lms/missed`   | Connect the LMS, sync, semester start, courses; missed work by course |
+| More  | More     | `#/more`                  | Notifications, mail accounts, repeating tasks, templates, theme, log out |
 
 - Look: Spider-Man night poster. Colours, fonts, the type scale and sizes are tokens in `web/src/theme.css`;
   every text rule in `web/src/app.css` is one of four roles (Display, Label, Body, Meta).
@@ -287,3 +293,45 @@ never sees passwords. Code: `server/src/mail/` (`gmail.js` and `graph.js` are tw
 
 Tests use stand-in Google and Microsoft servers (`server/test/fake-mail-providers.js`), so they run without real
 accounts.
+
+### LMS (KL University)
+
+lms.kluniversity.in is Moodle. The app signs in like the Moodle phone app: More → LMS takes your LMS username and
+password once, swaps them at `login/token.php` for a web-service token, and keeps only that token, encrypted
+(AES-256-GCM) with `LMS_TOKEN_KEY`. The password is never stored or logged. Code: `server/src/lms/` (`client.js` talks
+to Moodle, `index.js` syncs). No web pages are scraped.
+
+- **Synced** every 2 hours, when you open the app (at most every 10 minutes) and with "Sync now". It looks back to the
+  semester start you set (or 180 days). Calls, one at a time: site info (which functions the token may use), courses
+  in progress, the Dashboard timeline (`core_calendar_get_action_events_by_timesort`, which still lists overdue work),
+  assignment and quiz lists (once a day per course), then submission status or quiz attempts only for work that isn't
+  done yet. Functions the LMS doesn't allow are skipped and listed on the LMS screen.
+- **Status:** upcoming (due later); overdue (due date passed, still accepted until the cut-off), shown in red at the
+  top of Today; missed (cut-off or quiz close passed, nothing handed in), listed by course under Missed; done
+  (submitted or attempted). Work only known from the timeline counts as done once it drops off it, or missed if its
+  cut-off passed.
+- **Tasks:** each upcoming or overdue item gets one planner task on its due day (overdue ones on today; at midnight they
+  move to today instead of going to Unfinished). Submitting on the LMS ticks the task by itself. A task you delete
+  isn't made again, one you tick stays ticked, and one you move to today or a later day stays there. Hiding a course
+  takes its open tasks off the plan; showing it brings those back.
+- **Notifications:** 23:00 adds "Due tomorrow" and "Still overdue: N" (and is sent even if you planned tomorrow, when
+  there's something to say); 06:00 adds what's due today; one notification when work becomes missed; one when the
+  sign-in stops working ("Reconnect LMS", also a banner on Today).
+- **Switched off** until `LMS_TOKEN_KEY` is set. `LMS_URL` changes the site (default https://lms.kluniversity.in).
+
+| Method | Path                     | Body / notes                                                                   |
+|--------|--------------------------|--------------------------------------------------------------------------------|
+| GET    | `/api/lms/status`        | Connected or not, last sync and error, counts, semester start, missing functions |
+| POST   | `/api/lms/connect`       | `{ username, password }`; 5 wrong passwords in 15 minutes blocks it for the rest of that window |
+| POST   | `/api/lms/disconnect`    | Forgets the token and synced work; tasks stay as plain tasks                     |
+| POST   | `/api/lms/sync`          | Sync now; `{ auto: true }` syncs in the background at most every 10 minutes     |
+| PATCH  | `/api/lms/settings`      | `{ semesterStart: 'YYYY-MM-DD' \| null }`                                         |
+| GET    | `/api/lms/items`         | `?status=open\|upcoming\|overdue\|missed\|done\|all` (default open)                 |
+| GET    | `/api/lms/courses`       | Courses with open and missed counts, linked project, hidden                      |
+| PATCH  | `/api/lms/courses/:id`   | `{ projectId?: id \| null, hidden? }`                                             |
+
+Today has an LMS card (counts, the next 5 deadlines, last sync); `/api/today` returns it as `lms`. Tasks made from LMS
+work carry `lms: { itemId, status, dueAt, course, url }`. Times from the LMS are stored as UTC
+ISO and shown in IST. Tests use a stand-in Moodle (`server/test/fake-lms.js`) answering from JSON files in
+`server/test/fixtures/lms/`, written in Moodle's response format with made-up names and ids (nothing recorded from the
+real account).

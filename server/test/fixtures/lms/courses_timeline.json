@@ -1,0 +1,7 @@
+{
+  "courses": [
+    { "id": 101, "fullname": "Probability &amp; Statistics", "shortname": "MT-101", "startdate": 1785522600, "enddate": 1798741800 },
+    { "id": 102, "fullname": "Data Structures", "shortname": "CS-102", "startdate": 1785522600, "enddate": 1798741800 }
+  ],
+  "nextoffset": 2
+}

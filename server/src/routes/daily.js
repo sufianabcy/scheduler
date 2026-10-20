@@ -45,7 +45,7 @@ function priorityInput(value) {
 const remindInput = (value) => (value === undefined || value === null ? value : v.time(value, 'remindAt'));
 
 /** Daily plan, Unfinished list, repeating tasks, and /today for the home page. */
-export function dailyRoutes({ db, now }) {
+export function dailyRoutes({ db, now, lms = null }) {
   const daily = createDaily(db);
   const goals = createGoals(db);
   const projects = createProjects(db);
@@ -62,11 +62,13 @@ export function dailyRoutes({ db, now }) {
 
   /**
    * Everything the home page needs in one request: today's checklist, the Unfinished list, goal tasks due today
-   * (or overdue), and the goal and project cards.
+   * (or overdue), the goal and project cards, and the LMS section (counts, what's coming up, reconnect banner).
    */
   router.get('/today', ready, (req, res) => {
     const userId = req.user.id;
     const month = monthOf(now());
+    // LMS work whose due date just passed shows as overdue straight away, not after the next sync.
+    if (lms?.enabled) lms.recompute(userId);
     res.json({
       day: req.today,
       month,
@@ -75,6 +77,7 @@ export function dailyRoutes({ db, now }) {
       goalTasksDue: goals.dueTasks(userId, month, req.today),
       goals: goals.list(userId, month),
       projects: projects.list(userId),
+      lms: lms?.enabled ? lms.summary(userId) : { enabled: false, connected: false, needsReconnect: false },
     });
   });
 

@@ -25,9 +25,9 @@ export function Login({ onLogin }) {
   };
 
   return (
-    <div class="login">
-      <form class="card" onSubmit={submit}>
-        <div class="login-hero" aria-hidden="true" />
+    // The full poster is the page's background (CSS only, so it's only fetched on this screen).
+    <div class="login-page">
+      <form class="card login-card" onSubmit={submit}>
         <h1>Planner</h1>
         <p>Log in to plan your day.</p>
         {error && (

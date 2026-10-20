@@ -1,0 +1,22 @@
+{
+  "sitename": "Example LMS",
+  "username": "student",
+  "firstname": "Test",
+  "lastname": "Student",
+  "fullname": "Test Student",
+  "lang": "en",
+  "userid": 9001,
+  "siteurl": "https://lms.example.test",
+  "release": "4.1",
+  "version": "2022112800",
+  "functions": [
+    { "name": "core_webservice_get_site_info", "version": "2022112800" },
+    { "name": "core_course_get_enrolled_courses_by_timeline_classification", "version": "2022112800" },
+    { "name": "core_enrol_get_users_courses", "version": "2022112800" },
+    { "name": "core_calendar_get_action_events_by_timesort", "version": "2022112800" },
+    { "name": "mod_assign_get_assignments", "version": "2022112800" },
+    { "name": "mod_assign_get_submission_status", "version": "2022112800" },
+    { "name": "mod_quiz_get_quizzes_by_courses", "version": "2022112800" },
+    { "name": "mod_quiz_get_user_attempts", "version": "2022112800" }
+  ]
+}

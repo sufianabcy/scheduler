@@ -5,6 +5,8 @@ import { loadSession, requireJsonForWrites } from './auth/middleware.js';
 import { createSessionStore } from './auth/sessions.js';
 import { HttpError } from './http.js';
 import { createJobs } from './jobs.js';
+import { createLms } from './lms/index.js';
+import { lmsRoutes } from './lms/routes.js';
 import { createMail } from './mail/index.js';
 import { mailRoutes } from './mail/routes.js';
 import { createPush, loadVapidKeys } from './push.js';
@@ -33,7 +35,7 @@ const CSP = [
 /**
  * `now` is the clock (tests pass a fixed one). `jobs` runs the midnight rollover; index.js also starts its timer.
  * `push` sends notifications; index.js shares one with the notification jobs. `mail` is the Gmail/Outlook service,
- * shared the same way with the 5-minute mail sync.
+ * shared the same way with the 5-minute mail sync. `lms` is the KL University LMS sync, shared with its 2-hour sync.
  */
 export function createApp({
   db,
@@ -42,6 +44,7 @@ export function createApp({
   jobs = createJobs(db, { now }),
   push = createPush(db, { vapid: loadVapidKeys(db), subject: config.vapidSubject }),
   mail = createMail(db, { config, now }),
+  lms = createLms(db, { config, now, push }),
 }) {
   const app = express();
   const sessions = createSessionStore(db, config);
@@ -83,7 +86,8 @@ export function createApp({
   api.use('/push', pushRoutes({ push }));
   api.use('/settings', settingsRoutes({ db }));
   api.use('/mail', mailRoutes({ db, mail, now }));
-  api.use(dailyRoutes({ db, now }));
+  api.use('/lms', lmsRoutes({ lms }));
+  api.use(dailyRoutes({ db, now, lms }));
 
   api.use((req, res) => res.status(404).json({ error: 'Not found' }));
   api.use((err, req, res, next) => {

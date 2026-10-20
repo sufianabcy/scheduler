@@ -10,14 +10,16 @@ const TASK_GRACE_MINUTES = 15;
 
 /**
  * Notifications, sent to every device that turned them on. Times are IST and chosen by each user:
- * - "Plan tomorrow" (default 23:00): skipped for a user who already added tasks for tomorrow.
- * - Morning summary (default 06:00): how many tasks today, the first few, and how many are in Unfinished.
+ * - "Plan tomorrow" (default 23:00): skipped for a user who already added tasks for tomorrow, unless the LMS has
+ *   work due tomorrow or still overdue (then it says just that).
+ * - Morning summary (default 06:00): how many tasks today, the first few, how many are in Unfinished, and LMS work
+ *   due today.
  * - Task reminders: at the time set on a task (or on a repeating task, for each of its copies), if it's still open.
  *
  * Each goes out once. If the server was down at the time, it still goes out a little later (see the grace
  * minutes above, never past midnight), but not hours late.
  */
-export function createNotifier(db, { push, mail = null, now = () => new Date() }) {
+export function createNotifier(db, { push, mail = null, lms = null, now = () => new Date() }) {
   const daily = createDaily(db);
   const goals = createGoals(db);
   const settings = createSettings(db);
@@ -26,7 +28,8 @@ export function createNotifier(db, { push, mail = null, now = () => new Date() }
     users: db.prepare('SELECT DISTINCT user_id FROM push_subscriptions ORDER BY user_id'),
     plannedTasks: db.prepare(`
       SELECT count(*) AS n FROM daily_tasks
-      WHERE user_id = ? AND day = ? AND repeating_task_id IS NULL AND status = 'open'`),
+      WHERE user_id = ? AND day = ? AND repeating_task_id IS NULL AND status = 'open'
+        AND id NOT IN (SELECT task_id FROM lms_items WHERE task_id IS NOT NULL)`),
     hasRun: db.prepare('SELECT 1 FROM job_runs WHERE name = ? AND run_key = ?'),
     markRun: db.prepare('INSERT OR IGNORE INTO job_runs (name, run_key) VALUES (?, ?)'),
     dueReminders: db.prepare(`
@@ -37,12 +40,28 @@ export function createNotifier(db, { push, mail = null, now = () => new Date() }
     markReminded: db.prepare("UPDATE daily_tasks SET reminded_at = datetime('now') WHERE id = ?"),
   };
 
+  const listed = (titles) => titles.slice(0, MAX_LISTED).join(' · ') + (titles.length > MAX_LISTED ? ` +${titles.length - MAX_LISTED} more` : '');
+
   function evening(userId, today) {
     const tomorrow = addDays(today, 1);
-    if (q.plannedTasks.get(userId, tomorrow).n > 0) return null;
+    const dueTomorrow = lms?.enabled ? lms.dueOn(userId, tomorrow) : [];
+    const overdue = lms?.enabled ? lms.overdueCount(userId) : 0;
+    const lmsLines = [];
+    if (dueTomorrow.length > 0) lmsLines.push(`Due tomorrow: ${listed(dueTomorrow.map((i) => i.title))}`);
+    if (overdue > 0) lmsLines.push(`Still overdue: ${overdue} on the LMS`);
+
+    if (q.plannedTasks.get(userId, tomorrow).n > 0) {
+      if (lmsLines.length === 0) return null;
+      return {
+        title: dueTomorrow.length > 0 ? `Due tomorrow: ${dueTomorrow.length} on the LMS` : `Still overdue: ${overdue} on the LMS`,
+        body: lmsLines.join('\n'),
+        url: '/#/',
+        tag: 'evening',
+      };
+    }
     return {
       title: 'Plan tomorrow',
-      body: 'Nothing planned for tomorrow yet. Two minutes now saves your morning.',
+      body: ['Nothing planned for tomorrow yet. Two minutes now saves your morning.', ...lmsLines].join('\n'),
       url: `/#/plan/${tomorrow}`,
       tag: 'evening',
     };
@@ -65,6 +84,8 @@ export function createNotifier(db, { push, mail = null, now = () => new Date() }
       lines.push('Open the app to plan your day.');
     }
     if (unfinished > 0) lines.push(`${unfinished} unfinished from earlier days`);
+    const lmsDue = lms?.enabled ? lms.dueOn(userId, today) : [];
+    if (lmsDue.length > 0) lines.push(`Due today on the LMS: ${listed(lmsDue.map((i) => i.title))}`);
     const starred = mail?.starredCount(userId) ?? 0;
     if (starred > 0) lines.push(`${starred} starred mail${starred > 1 ? 's' : ''} waiting`);
 

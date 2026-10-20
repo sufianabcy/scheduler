@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { del, patch, post } from '../api.js';
-import { dayLabel, formatTime, todayIST } from '../dates.js';
+import { dayLabel, dueLabel, formatTime, todayIST } from '../dates.js';
 import { attempt } from '../hooks.js';
 import { parseQuickAdd } from '../quickadd.js';
 import { describeRepeat, repeatBody, sameRepeat } from '../repeat.js';
@@ -34,6 +34,30 @@ function TaskMeta({ task, extra }) {
         <Icon name="mail" size={13} /> Open mail
       </a>,
     );
+  }
+  if (task.lms) {
+    // Work from the LMS: ticked by itself once it's submitted there.
+    const { status, dueAt, course, url } = task.lms;
+    parts.push(
+      <span key="l" class="badge badge-blue" title={course}>
+        LMS
+      </span>,
+    );
+    if (status === 'done') parts.push(<span key="ld">Submitted on the LMS</span>);
+    else if (dueAt) {
+      parts.push(
+        <span key="ld" class={status === 'overdue' ? 'prio-text prio-1' : undefined}>
+          {status === 'overdue' ? 'Was due' : 'Due'} {dueLabel(dueAt)}
+        </span>,
+      );
+    }
+    if (url) {
+      parts.push(
+        <a key="lu" href={url} target="_blank" rel="noopener noreferrer">
+          <Icon name="external" size={13} /> Open in LMS
+        </a>,
+      );
+    }
   }
   if (extra) parts.push(<span key="x">{extra}</span>);
   if (parts.length === 0) return null;

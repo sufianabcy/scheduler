@@ -1,0 +1,7 @@
+{
+  "11": { "lastattempt": { "submission": { "id": 1, "status": "submitted", "timemodified": 1790656200 }, "gradingstatus": "graded" }, "feedback": { "gradefordisplay": "<span>9.00&nbsp;/ 10.00</span>" }, "warnings": [] },
+  "12": { "lastattempt": { "submission": { "id": 2, "status": "new", "timemodified": 0 }, "gradingstatus": "notgraded" }, "warnings": [] },
+  "13": { "lastattempt": { "submission": { "id": 3, "status": "draft", "timemodified": 1792300000 }, "gradingstatus": "notgraded" }, "warnings": [] },
+  "21": { "lastattempt": { "submission": { "id": 4, "status": "new", "timemodified": 0 }, "gradingstatus": "notgraded" }, "warnings": [] },
+  "24": { "lastattempt": { "submission": { "id": 5, "status": "new", "timemodified": 0 }, "gradingstatus": "notgraded" }, "warnings": [] }
+}

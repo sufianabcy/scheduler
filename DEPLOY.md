@@ -333,6 +333,26 @@ Microsoft only send you back to that address, and the login cookie for `127.0.0.
 | "Gmail is not set up on the server yet"             | The client ID or secret is missing in `/etc/planner.env`; restart after adding |
 | An account says "Needs reconnecting"                | Tap **Reconnect** (password changed, access removed, or the 7-day Testing limit) |
 
+## LMS setup (KL University)
+
+The app signs in to lms.kluniversity.in the way the Moodle phone app does and keeps only the sign-in token,
+encrypted with `LMS_TOKEN_KEY`. Your LMS password is never stored. On the server, add the key once (this only adds it
+if it's missing), then restart:
+
+```bash
+sudo grep -q '^LMS_TOKEN_KEY=.' /etc/planner.env || echo "LMS_TOKEN_KEY=$(openssl rand -base64 32)" | sudo tee -a /etc/planner.env >/dev/null
+```
+
+```bash
+sudo systemctl restart planner
+```
+
+Keep a copy of the key in your password manager (`sudo grep LMS_TOKEN_KEY /etc/planner.env`). If it's lost or
+changed, the app asks you to connect the LMS again; nothing else is lost. Then in the app: More → LMS → type your LMS
+username and password → Connect LMS.
+
+On your Mac, `server/.env` already has its own `LMS_TOKEN_KEY` (it's gitignored).
+
 ## Everyday use
 
 All commands below run on the server (`ssh -i ~/.ssh/planner-admin.pem ubuntu@13.200.10.20`).

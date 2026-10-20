@@ -3,7 +3,7 @@
 A light daily planner with monthly goals and step-by-step projects. Installed from Chrome on an Android phone
 (home-screen icon) and on a Mac (Dock icon). Hosted on AWS, Mumbai region (ap-south-1).
 
-Status: draft, updated 2026-10-16. Items marked **(assumed)** still need your confirmation.
+Status: draft, updated 2026-10-20. Items marked **(assumed)** still need your confirmation.
 
 ---
 
@@ -82,10 +82,28 @@ if it was off at midnight.
 
 ## 6. Home page
 
-- Today's checklist, at the top
+- Overdue LMS work, in red, at the top (only when there is some)
+- An LMS card beside the goals: how much is coming up, overdue and missed, the next 5 deadlines, last sync
+- Today's checklist
 - Unfinished tasks (only shown when there are any)
 - Monthly goal cards, each with a progress bar and the current task
 - Project cards, each with a progress bar and the current step's name
+
+## 6a. KL University LMS
+
+- More → LMS: type your LMS username and password once. The app gets a sign-in token from the LMS (like the Moodle
+  app) and keeps only that, encrypted. The password is never stored. If the token stops working, Today shows a
+  "Reconnect LMS" banner and one notification is sent.
+- Synced every 2 hours, when the app is opened (at most every 10 minutes) and with "Sync now". The first sync looks
+  back to the semester start (set on the LMS screen; 180 days if not set).
+- Each piece of work is **upcoming**, **overdue** (due date passed but still accepted), **missed** (no longer
+  accepted, nothing handed in) or **done** (submitted, or the quiz attempted).
+- Upcoming and overdue work gets a task on its due day, marked LMS with an "Open in LMS" link. It ticks itself once
+  submitted on the LMS. Overdue work shows in red at the top of Today and moves to today each day until it's done or
+  missed. Missed work leaves the plan and is listed by course under LMS → Missed.
+- Notifications: 23:00 adds what's due tomorrow and how many are still overdue; 06:00 adds what's due today; one
+  notification when something becomes missed.
+- Courses can be hidden (their work leaves the plan) or linked to one of your projects.
 
 ## 7. Design
 

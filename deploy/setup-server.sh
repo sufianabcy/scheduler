@@ -106,6 +106,8 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 MS_CLIENT_ID=
 MS_CLIENT_SECRET=
+# KL University LMS: see "LMS setup" in DEPLOY.md.
+LMS_TOKEN_KEY=$(openssl rand -base64 32)
 EOF
   chown root:planner /etc/planner.env
   chmod 640 /etc/planner.env

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { del, get, patch, post, put } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
 import { AddRow, Check, InlineEdit, LoadError, Loading, MoveButtons, PageHeader, Progress, moved } from '../components/ui.jsx';
+import { PlanTabs } from '../components/PlanTabs.jsx';
 import { attempt, go, useLoad } from '../hooks.js';
 import { toast } from '../toast.js';
 import { ProjectCard } from './Today.jsx';
@@ -87,6 +88,7 @@ export function ProjectList() {
   return (
     <>
       <PageHeader title="Projects" sub="Steps open one at a time: finish one to unlock the next." />
+      <PlanTabs current="projects" />
 
       {active.length === 0 ? (
         <div class="card empty">No active projects.</div>
