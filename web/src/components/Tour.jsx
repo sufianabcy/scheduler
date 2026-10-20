@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { Icon } from './Icon.jsx';
+import { InstallGuide } from './InstallGuide.jsx';
 
 // The app tour: a short walkthrough of what Planner does, one screen per feature. It opens by itself the first time
 // someone logs in on a device, and again from More → App tour. "Seen" is remembered per user in this browser only.
@@ -157,12 +158,13 @@ const PICTURES = {
       </div>
     </div>
   ),
+  install: () => <InstallGuide compact />,
   more: () => (
     <div class="tour-pic">
       <div class="tour-setting"><Icon name="moon" size={16} /> Dark or light theme</div>
       <div class="tour-setting"><Icon name="bell" size={16} /> Notification times</div>
       <div class="tour-setting"><Icon name="lock" size={16} /> Change your password</div>
-      <div class="tour-setting"><Icon name="home" size={16} /> Install as an app</div>
+      <div class="tour-setting"><Icon name="right" size={16} /> This tour, any time</div>
     </div>
   ),
 };
@@ -204,9 +206,16 @@ const STEPS = [
     text: 'Connect your KL University LMS once. Assignments and quizzes sync every 2 hours; overdue work shows in red, and you’re told if something is missed.',
   },
   {
+    pic: 'install',
+    // The picture is the guide itself: device tabs you can tap.
+    interactive: true,
+    title: 'Put Planner on your home screen',
+    text: 'Install it like an app: it opens in one tap, gets its own window, and its notifications are more reliable. Pick your device above.',
+  },
+  {
     pic: 'more',
     title: 'Make it yours',
-    text: 'More has the theme, notification times, your password and how to install Planner as an app. You can watch this tour again from there too.',
+    text: 'More has the theme, notification times and your password. These install steps are there too, and so is this tour.',
   },
 ];
 
@@ -216,7 +225,7 @@ export function Tour({ userId, onClose }) {
   const touch = useRef(null);
   const [step, setStep] = useState(0);
   const last = step === STEPS.length - 1;
-  const { pic, title, text } = STEPS[step];
+  const { pic, title, text, interactive } = STEPS[step];
   const Picture = PICTURES[pic];
 
   useEffect(() => {
@@ -271,7 +280,7 @@ export function Tour({ userId, onClose }) {
       </div>
 
       <div class="tour-slide" key={step}>
-        <div class="tour-stage" aria-hidden="true">
+        <div class={`tour-stage${interactive ? ' is-interactive' : ''}`} aria-hidden={interactive ? undefined : 'true'}>
           <Picture />
         </div>
         <h2 id="tour-title" class="tour-title">

@@ -116,10 +116,13 @@ switched with the Day / Goals / Projects tabs at the top of each (`web/src/compo
   `web/src/assets/hero/`. Today is two columns from 1000px wide.
 - Production build, gzipped: JS 22.3 KB, CSS 4.8 KB. Fonts 31.8 KB and header images 35.1 KB, cached by the
   service worker after the first load. No idle animations, no new dependencies. Lighthouse not measured yet.
-- App tour (`web/src/components/Tour.jsx`): 8 short screens (Today, quick add, Plan/Goals/Projects, reminders,
-  Mail, LMS, More), each with a small picture drawn from the app's own parts. It opens by itself the first time a
+- App tour (`web/src/components/Tour.jsx`): 9 short screens (Today, quick add, Plan/Goals/Projects, reminders,
+  Mail, LMS, installing the app, More), each with a small picture drawn from the app's own parts. It opens by itself the first time a
   user logs in on a device (remembered in that browser's localStorage) and again from More → Help → Start tour.
   Arrow keys or swipes move between screens; Esc or Skip closes it.
+- Install guide (`web/src/components/InstallGuide.jsx`): step-by-step "add to home screen" for Android (Chrome),
+  iPhone (Safari), Mac (Chrome) and Windows (Chrome), opening on the reader's own device. Shown in the tour and in
+  More → This device.
 - `web/public/sw.js` makes the app installable and lets it open offline with the last data it loaded. Changes
   need the network. Logging out deletes the saved data.
 - App icons (the round unimpressed face) are drawn by `web/scripts/make_icons.py` (`npm --prefix web run icons`,

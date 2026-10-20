@@ -1496,6 +1496,82 @@ a:focus-visible {
   }
 }
 
+/* The install step: the guide is tappable and may scroll inside the picture area. */
+.tour-stage.is-interactive {
+  pointer-events: auto;
+  overflow-y: auto;
+  background: var(--surface-2);
+}
+
+/* ---------- Install guide (tour and More) ---------- */
+
+.install-guide {
+  margin-top: 10px;
+}
+
+.install-steps {
+  margin: 12px 0 0;
+  padding-left: 1.4em;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.install-steps li + li {
+  margin-top: 6px;
+}
+
+.install-steps li::marker {
+  color: var(--red-text);
+  font-weight: 700;
+}
+
+.install-steps b {
+  font-weight: 600;
+}
+
+.install-note {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--red-soft);
+  font-size: var(--fs-sm);
+}
+
+.install-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.install-guide.is-compact {
+  margin-top: 0;
+}
+
+.install-guide.is-compact .chip {
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.install-guide.is-compact .install-steps {
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+}
+
+.install-guide.is-compact .install-steps li + li {
+  margin-top: 2px;
+}
+
+.install-guide.is-compact .install-note {
+  margin-top: 6px;
+  padding: 6px 8px;
+  font-size: var(--fs-xs);
+}
+
 /* ---------- Users (admin) ---------- */
 
 .mono {

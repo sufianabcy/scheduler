@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { del, get, patch, post } from '../api.js';
 import { Icon } from '../components/Icon.jsx';
+import { InstallGuide } from '../components/InstallGuide.jsx';
 import { PriorityPicker, ReminderPicker, RepeatPicker } from '../components/TaskOptions.jsx';
 import { LoadError, Loading, PageHeader } from '../components/ui.jsx';
 import { formatTime } from '../dates.js';
@@ -484,9 +485,8 @@ export function More({ user, onLogout, onTour }) {
             <li class="row">
               <div class="row-main">
                 <div>Install as an app</div>
-                <div class="row-meta">
-                  Android: Chrome menu ⋮ → Add to Home screen. Mac: Chrome menu ⋮ → Cast, save and share → Install page as app.
-                </div>
+                <div class="row-meta">Opens in one tap, in its own window, with more reliable notifications.</div>
+                <InstallGuide />
               </div>
             </li>
             <li class="row">
